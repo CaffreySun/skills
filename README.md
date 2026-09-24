@@ -1,5 +1,7 @@
 # skills
 
+English | [中文版](./README.zh.md)
+
 My agent skills. Two of them, and together they cover the one failure mode that
 matters: **an agent that never checks its own work.**
 
@@ -81,6 +83,7 @@ The spec is a **binding contract**: Execute follows it, Verify judges by it.
 No spec reaches execution without surviving an adversarial challenge first.
 
 [Read the skill →](./skills/engineering/task-spec/SKILL.md)
+· [Why it's built this way →](./docs/engineering/task-spec.md)
 
 ### adversarial-review-loop
 
@@ -96,14 +99,22 @@ Convergence on a real 24-file change: **8 → 3 → 3 → 2 → 0** findings acr
 rounds of fix-then-re-review.
 
 [Read the skill →](./skills/engineering/adversarial-review-loop/SKILL.md)
+· [Why it's built this way →](./docs/engineering/adversarial-review-loop.md)
 
 ## Repo layout
 
 ```
-skills/<bucket>/<name>/SKILL.md   # the skill; frontmatter name must match dir
+skills/<bucket>/<name>/SKILL.md   # instructions, read by the agent every trigger
+skills/<bucket>/<name>/*.md       # supporting files, loaded on demand
+docs/<bucket>/<name>.md           # long-form rationale, written for humans
 .claude-plugin/                   # Claude Code plugin manifest
 scripts/                          # maintainer tooling
 ```
+
+Each skill keeps its `SKILL.md` tight: what to do, in order. Anything that is
+rationale, or only needed in one branch of the run, lives in a sibling file and
+is linked from the point where it's needed. The agent pays for those only when
+it actually follows the link.
 
 Adding a skill means editing **two** places: drop in the directory, then add its
 path to `.claude-plugin/plugin.json`. `npm run check` fails if you forget.
