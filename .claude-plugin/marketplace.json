@@ -1,0 +1,23 @@
+{
+  "name": "caffreysun",
+  "owner": {
+    "name": "CaffreySun",
+    "url": "https://github.com/CaffreySun"
+  },
+  "description": "CaffreySun's agent skills, as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "caffreysun-skills",
+      "source": "./",
+      "description": "Two quality-control loops for coding agents: task-spec before acting, adversarial-review-loop after.",
+      "category": "engineering",
+      "keywords": [
+        "engineering",
+        "skills",
+        "spec",
+        "review",
+        "verification"
+      ]
+    }
+  ]
+}

@@ -1,70 +1,124 @@
-# task-spec
+# skills
 
-Prevents AI from executing before thinking — by running every task through an adversarial quality-control loop.
+My agent skills. Two of them, and together they cover the one failure mode that
+matters: **an agent that never checks its own work.**
 
-## The problem
+They are the two halves of a single quality-control loop. One runs *before* the
+agent acts, one runs *after*.
 
-LLMs have two problems. One before they act, one after.
+| Skill | When it runs | What it forces |
+|---|---|---|
+| [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | after acting | Partition discovery away from judgement, fix only what survives review, then review the fixes until a round yields zero findings. |
 
-A modern AI is like a brilliant person who never double-checks anything. It gives you answers that look right — confident, well-structured, plausible — but it never stops to ask whether they actually are.
+## Why both
 
-The reason runs deeper than laziness. An LLM generates text one word at a time, always picking the statistically most likely next word. Its first instinct is always the most probable path — not the most careful one. A correct answer and a wrong-but-plausible one look the same in the numbers. From the inside, the model cannot tell them apart.
+An LLM generates the statistically most likely next token. A correct answer and a
+plausible wrong one have the same statistical shape, so the model cannot tell
+them apart from the inside. This breaks in two places, and they need different
+fixes:
 
-This shows up in two ways:
+**Before acting — the first idea wins.** The highest-probability continuation is
+the first "thought," and the model runs with it. No alternatives, no "is this
+even the right problem?" You cannot prompt a model into *wanting* better work;
+you can only force it through the steps. That is `task-spec`.
 
-**Before acting — shallow thinking.** The model grabs the first direction that comes to mind and runs. No alternatives. No "is this even the right problem?" It treats having an answer and having the *right* answer as the same thing.
+**After acting — "done" means "done well."** The model does not catch its own
+contradictions or missed criteria. But "does the output match the spec?" is an
+objective question, so it can be enforced from outside. That is
+`adversarial-review-loop` — and its core rule is that the thing finding problems
+and the thing judging whether they are real must never be the same context.
 
-**After acting — no verification.** The model does not check its work. "Done" equals "done well." It will not catch contradictions, will not compare results against intent, will not ask what was missed.
+## Installation
 
-Better training data does not fix either problem. It teaches the model what correct output *looks like* — not the thinking that produced it. The doubt, the abandoned first attempts, the self-checking that humans do before writing — all invisible in the final result. The model sees only the output, never the process.
+Two ways in, two philosophies. Pick one — installing both gives you every skill
+twice.
 
-## Can it be fixed?
+### Claude Code plugin (managed, auto-updating)
 
-This is architectural. The way models generate text — one statistically-likely word after another — never asks "is this right?" No training data change or prompt engineering installs that question.
+```bash
+/plugin marketplace add CaffreySun/skills
+/plugin install caffreysun-skills
+```
 
-At the **model level**: researchers are exploring architectures that can pause, evaluate, and revise mid-generation. But this is a frontier — not something reliable today.
+You get a read-only bundle that updates when I ship. Subscribe, don't fork.
 
-At the **Harness level**: the two problems differ in kind.
+### `skills` CLI (editable, yours)
 
-Verification is the easier one. "Does the output match the spec?" is an objective question. You can enforce it from the outside — a contract, a checklist, evidence.
+```bash
+# See what's available
+npx skills add CaffreySun/skills --list
 
-Thinking is harder. "Is this the right approach?" "Is this good enough?" These need something the model does not have: an internal compass that points toward "better." The model steers toward "most likely," never "better." It does not settle for shallow because it is lazy — it settles for shallow because it cannot tell which direction goes deeper.
+# Install everything
+npx skills add CaffreySun/skills
 
-The human equivalent is attitude. A person who genuinely wants to do good work naturally explores alternatives, questions assumptions, anticipates problems. The model has no equivalent drive. It cannot *want* anything.
+# Or pick one
+npx skills add CaffreySun/skills --skill task-spec
+npx skills add CaffreySun/skills --skill adversarial-review-loop
+```
 
-This is why the two problems need different strategies. Verification can be enforced by contract. Thinking can only be pushed by structure — guiding the model through the steps a high-attitude person takes naturally.
+This writes ordinary files into your repo that you own and can edit. Pull my
+changes when you want them with `npx skills update`.
 
-## The answer
+Works with any [agent that supports skills](https://github.com/vercel-labs/skills#supported-agents):
+Claude Code, Codex, Cursor, OpenCode, and 70+ more.
 
-task-spec tackles both problems with five phases:
+## The skills
+
+### task-spec
+
+> The spec is not a template to fill in. It is the output of a quality-control
+> process. If the process doesn't loop, quality didn't happen.
+
+Five phases, two loops:
 
 **Explore → Spec → Challenge → Execute → Verify**
 
-**Explore** — map the solution space. Understand the problem, consider directions, eliminate dead ends. Do not commit yet.
+The inner loop (Explore → Spec → Challenge) sharpens the plan before acting.
+The outer loop (Execute → Verify → Explore) validates what came out after.
 
-**Spec** — lock in a direction. Define measurable acceptance criteria, anticipate risks, state your reasoning. The spec becomes a binding contract: Execute follows it, Verify judges by it.
+The spec is a **binding contract**: Execute follows it, Verify judges by it.
+No spec reaches execution without surviving an adversarial challenge first.
 
-**Challenge** — adversarial review. Five questions: edge cases, wrong assumptions, overengineering, risk, and whether the solution space was thoroughly explored. Non-trivial tasks delegate this to a subagent. No spec reaches execution without surviving this gate.
+[Read the skill →](./skills/engineering/task-spec/SKILL.md)
 
-**Execute** — follow the spec exactly. Every action must trace back to it. Hit something uncovered? Pause, return to Explore.
+### adversarial-review-loop
 
-**Verify** — check each criterion against actual output with evidence. All pass? Done. Any fail? Analyze the failure first, then return to Explore for a new cycle.
+Built from measured runs, not theory. Two numbers from the field:
 
-These five phases form two loops. The **inner loop** (Explore → Spec → Challenge) sharpens the plan before acting — minor flaws go back to Spec, major ones to Explore. The **outer loop** (Execute → Verify → Explore) validates results after acting — a Verify failure restarts the cycle.
+- In one project, **16 of 51 fixes introduced or missed something** — which is
+  why every round of fixes gets reviewed again, until a round returns zero.
+- In another, **7 of 14 findings were downgraded and 1 was rejected outright**
+  by independent judgement — which is why the agent that finds a problem is
+  never the agent that decides whether it's real.
 
-Every spec is written to `.task_spec/<slug>.md`, leaving an audit trail.
+Convergence on a real 24-file change: **8 → 3 → 3 → 2 → 0** findings across
+rounds of fix-then-re-review.
 
-## Install
+[Read the skill →](./skills/engineering/adversarial-review-loop/SKILL.md)
 
-```bash
-npx skills add CaffreySun/task-spec
+## Repo layout
+
+```
+skills/<bucket>/<name>/SKILL.md   # the skill; frontmatter name must match dir
+.claude-plugin/                   # Claude Code plugin manifest
+scripts/                          # maintainer tooling
+docs/                             # long-form rationale per skill
 ```
 
-Or for Claude Code:
+Adding a skill means editing **two** places: drop in the directory, then add its
+path to `.claude-plugin/plugin.json`. `npm run check` fails if you forget.
+
+## Maintainer scripts
 
 ```bash
-claude plugins install github.com/CaffreySun/task-spec
+npm run list     # enumerate every SKILL.md
+npm run check    # assert plugin.json matches disk (use in CI)
+./scripts/link-skills.sh   # symlink skills into ~/.claude/skills and ~/.agents/skills
 ```
+
+`link-skills.sh` moves any pre-existing non-symlink skill aside to
+`.bak-<name>-<timestamp>/` rather than deleting it.
 
 ## License
 

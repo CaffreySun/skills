@@ -1,7 +1,15 @@
 {
-  "name": "task-spec",
-  "version": "2.2.0",
-  "description": "AI skill: explore the solution space, produce a spec, challenge it adversarially, then execute and verify — a two-loop quality-control process compensating for the LLM's missing internal verification loop",
+  "name": "caffreysun-skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CaffreySun's agent skills: force the agent to think before it acts, and check its work after.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CaffreySun/skills.git"
+  },
   "license": "MIT",
-  "keywords": ["skill", "task-spec", "planning", "ai-agent"]
+  "scripts": {
+    "list": "bash scripts/list-skills.sh",
+    "check": "node scripts/check-plugin-skills.mjs"
+  }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "caffreysun-skills",
+  "version": "0.1.0",
+  "description": "CaffreySun's agent skills. task-spec forces the agent to explore, spec and adversarially challenge before acting; adversarial-review-loop closes the loop after acting by partitioning discovery away from judgement.",
+  "author": {
+    "name": "CaffreySun",
+    "url": "https://github.com/CaffreySun"
+  },
+  "homepage": "https://github.com/CaffreySun/skills",
+  "repository": "https://github.com/CaffreySun/skills",
+  "license": "MIT",
+  "keywords": [
+    "engineering",
+    "skills",
+    "spec",
+    "review",
+    "verification",
+    "quality-control"
+  ],
+  "skills": [
+    "./skills/engineering/task-spec",
+    "./skills/engineering/adversarial-review-loop"
+  ]
+}

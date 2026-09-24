@@ -56,14 +56,23 @@ task-spec 用五个阶段分别应对两个维度：
 
 ## 安装
 
+只装这一个 skill：
+
 ```bash
-npx skills add CaffreySun/task-spec
+npx skills add CaffreySun/skills --skill task-spec
 ```
 
-Claude Code：
+或者装整个技能集合：
 
 ```bash
-claude plugins install github.com/CaffreySun/task-spec
+npx skills add CaffreySun/skills
+```
+
+Claude Code 走插件方式，装的是整个集合并保持自动更新：
+
+```bash
+/plugin marketplace add CaffreySun/skills
+/plugin install caffreysun-skills
 ```
 
 ## 开源协议
