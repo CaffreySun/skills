@@ -103,7 +103,6 @@ rounds of fix-then-re-review.
 skills/<bucket>/<name>/SKILL.md   # the skill; frontmatter name must match dir
 .claude-plugin/                   # Claude Code plugin manifest
 scripts/                          # maintainer tooling
-docs/                             # long-form rationale per skill
 ```
 
 Adding a skill means editing **two** places: drop in the directory, then add its

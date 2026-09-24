@@ -1,0 +1,8 @@
+{
+  "name": "adversarial-review-loop",
+  "version": "1.0.0",
+  "description": "AI skill: review multi-file changes as a closed loop — partitioned discovery, independent adjudication, fix only what survives, then re-review the fixes until a round yields zero findings",
+  "license": "MIT",
+  "homepage": "https://github.com/CaffreySun/skills/tree/main/skills/engineering/adversarial-review-loop",
+  "keywords": ["skill", "review", "verification", "quality-control", "ai-agent"]
+}

@@ -1,7 +1,8 @@
 {
   "name": "task-spec",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "AI skill: explore the solution space, produce a spec, challenge it adversarially, then execute and verify — a two-loop quality-control process compensating for the LLM's missing internal verification loop",
   "license": "MIT",
+  "homepage": "https://github.com/CaffreySun/skills/tree/main/skills/engineering/task-spec",
   "keywords": ["skill", "task-spec", "planning", "ai-agent"]
 }
