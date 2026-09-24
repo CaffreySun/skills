@@ -127,8 +127,9 @@ npm run check    # assert plugin.json matches disk (use in CI)
 ./scripts/link-skills.sh   # symlink skills into ~/.claude/skills and ~/.agents/skills
 ```
 
-`link-skills.sh` moves any pre-existing non-symlink skill aside to
-`.bak-<name>-<timestamp>/` rather than deleting it.
+Anything already in a skill's slot is preserved, never deleted: a real directory
+is moved aside to `.bak-<name>-<timestamp>/`, and a symlink's *content* (not the
+link itself) is copied to the same place. Re-running won't stack up duplicates.
 
 ## License
 

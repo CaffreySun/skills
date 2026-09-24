@@ -13,9 +13,12 @@ set -euo pipefail
 # Only skills listed in .claude-plugin/plugin.json are linked, so this also
 # acts as a smoke test that the plugin manifest is correct.
 #
-# SAFETY: an existing non-symlink target is moved aside to
-#   <DEST>/.bak-<name>-<timestamp>/
-# and reported, rather than deleted. Inspect and delete when happy.
+# SAFETY: anything already occupying a skill's slot is preserved, never deleted.
+#   real directory -> moved aside to <DEST>/.bak-<name>-<timestamp>/
+#   symlink        -> its dereferenced *content* is copied to the same place,
+#                     because moving the link would leave a .bak that points at
+#                     a path this script is about to replace.
+# Inspect and delete the backups once you're happy.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DESTS=("$HOME/.claude/skills" "$HOME/.agents/skills")
@@ -62,8 +65,20 @@ for DEST in "${DESTS[@]}"; do
         continue
       fi
       backup="$DEST/.bak-$name-$(date +%Y%m%d%H%M%S)"
-      mv "$target" "$backup"
-      echo "backed up previous $name -> $backup"
+      [ -e "$backup" ] && backup="$backup-$$"
+      if [ -L "$target" ]; then
+        real="$(readlink -f "$target")"
+        if [ -e "$real" ]; then
+          cp -RL "$real" "$backup"
+          echo "backed up previous $name (symlink -> $real) -> $backup"
+        else
+          echo "note      previous $name was a broken symlink -> $(readlink "$target")"
+        fi
+        rm "$target"
+      else
+        mv "$target" "$backup"
+        echo "backed up previous $name -> $backup"
+      fi
     fi
 
     ln -s "$REPO/$rel" "$target"
