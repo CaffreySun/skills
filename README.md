@@ -6,30 +6,41 @@ My agent skills. Two of them, and together they cover the one failure mode that
 matters: **an agent that never checks its own work.**
 
 They are the two halves of a single quality-control loop. One runs *before* the
-agent acts, one runs *after*.
+agent acts; the other runs once there is something to check — which is usually
+after acting, but includes anything whose correctness can't be self-evidenced.
 
 | Skill | When it runs | What it forces |
 |---|---|---|
 | [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | after acting | Partition discovery away from judgement, fix only what survives review, then review the fixes until a round yields zero findings. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced | Partition discovery away from judgement, fix only what survives review, then review the fixes until a round yields zero findings. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
 
 ## Why both
 
 An LLM generates the statistically most likely next token. A correct answer and a
 plausible wrong one have the same statistical shape, so the model cannot tell
-them apart from the inside. This breaks in two places, and they need different
-fixes:
+them apart from the inside. This breaks in two places, and the two need different
+fixes.
+
+Verification is the easier half: "does this match what it's judged against?" is
+an objective question, so it can be enforced from outside — a contract, a
+checklist, evidence. Thinking is the harder half. "Is this the right approach?"
+needs an internal compass pointing at *better*, and the model steers at *most
+likely* instead. It doesn't settle for shallow because it is lazy; it settles for
+shallow because it cannot tell which direction goes deeper. The human equivalent
+is attitude, and you cannot prompt a model into wanting better work.
 
 **Before acting — the first idea wins.** The highest-probability continuation is
 the first "thought," and the model runs with it. No alternatives, no "is this
-even the right problem?" You cannot prompt a model into *wanting* better work;
-you can only force it through the steps. That is `task-spec`.
+even the right problem?" So this half can only be pushed by structure: walk the
+model through the steps someone who actually cares about the work takes
+naturally. That is `task-spec`.
 
-**After acting — "done" means "done well."** The model does not catch its own
-contradictions or missed criteria. But "does the output match the spec?" is an
-objective question, so it can be enforced from outside. That is
-`adversarial-review-loop` — and its core rule is that the thing finding problems
-and the thing judging whether they are real must never be the same context.
+**Once there is something to check — "done" means "done well."** The model does
+not catch its own contradictions or missed criteria. So this is the half that
+gets enforceable from outside — and it applies to a proposal or a contract just
+as much as to a finished diff. That is `adversarial-review-loop` — and its core
+rule is that the thing finding problems and the thing judging whether they are
+real must never be the same context.
 
 ## Installation
 
@@ -97,6 +108,10 @@ Built from measured runs, not theory. Two numbers from the field:
 
 Convergence on a real 24-file change: **8 → 3 → 3 → 2 → 0** findings across
 rounds of fix-then-re-review.
+
+The skill carries no project-specific procedure: where to partition, what counts
+as "correct", how to freeze the object — all decided by the agent applying it,
+from its own project and scenario.
 
 [Read the skill →](./skills/engineering/adversarial-review-loop/SKILL.md)
 · [Why it's built this way →](./docs/engineering/adversarial-review-loop.md)

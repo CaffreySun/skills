@@ -1,82 +1,107 @@
-# 编排模式与降级
+# Orchestration Modes, and What to Do When You Cannot Dispatch Anyone
 
-> 展开 [`SKILL.md`](./SKILL.md) 开场那段推荐。决定这一轮「整轮下沉」还是「自己跑」时读这份。
+> Read this when you need to decide whether this round is "hand the whole thing to one orchestrator" or "run it yourself". The modes and the discipline
+> do not change with the harness — only who dispatches and how the artifacts come back changes. First work through [`harness-probe.md`](./harness-probe.md)
+> to see which capabilities you actually have.
 
-## 两种编排模式
-### 模式 A：编排者模式（harness 支持嵌套）——推荐默认
+## Mode A: hand it to one orchestrator (default when there is nesting and you can dispatch several in parallel at once, see `SKILL.md` §4)
 
-**为什么**：主执行者自己跑全流程时，每个发现者 / 复核者的输出都进主上下文，还按轮数累积——这是「流程很重」的真正来源。下沉后主执行者只付 **1 次派工 + 最终结论**，全部过程留在编排者自己的上下文里。代价是失去「对发现是否被夸大」的直接手感，用「结论必须带 `old→new`」补回来（见下方纪律）。
+If the lead agent runs the whole round itself, the output of every finder and every adjudicator lands in the lead agent's own context
+and piles up round after round — "this process is too heavy" is really about this. Once you hand it out, the lead agent pays only the cost of
+"**dispatch once + receive one set of conclusions**", and everything in between stays in the orchestrator's own context.
 
-**前提（实测，非推断）**：
+**Preconditions**:
 
-- 编排者本身要「能被派、且自己也能派」。用**泛型**（工具集完整）的编排角色；**不要**用声明了硬白名单的强判断角色当编排者——它的可派类型被限死成轻量读型，分区审查与复核都派不出来。[`prompts.md`](./prompts.md) 给了 omp / Claude Code 各自的 in-harness 写法。
-- 需要**至少 1 层嵌套**：主执行者(第 0 层) → 编排者(第 1 层) → 发现者 / 复核者(第 2 层 = 叶子)。深度按**链路**算，不按总数，所以编排者自己派两波（先分区审查、再复核）没问题；但**它的子代理不能再生**——别在给下级的任务里要求「你也去派子代理」，该指令要么无效要么报错。
-- 过程可回收：产物要能按地址/路径回读。**默认不读**，只在需要核对某条判决时才取。
+- The orchestrator must "be dispatchable, and itself be able to dispatch others". Use a general-purpose role that has **every tool**; do not put a
+  strong-judgement role that declares a hard allowlist in the orchestrator seat — the types it can dispatch are locked down, and it cannot send out
+  partitions or adjudications at all.
+- You need **at least one level of nesting**: lead agent → orchestrator → finder / adjudicator (and no further). Depth counts along **a single chain**,
+  not by total headcount: the orchestrator sending two waves itself is fine, but **the people it dispatches cannot dispatch further**.
+- The artifacts are retrievable afterwards, or you can require subagents to **write the artifacts to a directory the subagent can read** and return
+  just a path. **By default do not go and read them**; fetch them only when you need to check a particular verdict.
 
-### 何时下沉、何时自己跑
+### When to hand it to the orchestrator, and when to run it yourself
 
-| 场景 | 做法 |
+| Situation | What to do |
 |---|---|
-| 20+ 文件 / 多轮 / 只要结论 | **下沉**（默认） |
-| 10–20 文件 | 下沉「只审不改」，修复由主执行者做 |
-| ≤10 文件 | 按降档表：1–2 分区 + 合组复核，可不下沉 |
-| 需要边审边与人来回决策、或改动定位本身要靠反复试探 | 主执行者自己跑（模式 B；下沉会切断与用户的交互） |
+| Many aspects to examine / more than one round expected / conclusions are all you want | **Hand it out** (the default; but with no nesting, or when you cannot dispatch in parallel, this does not hold — take mode B instead) |
+| You need to confirm back and forth with a person while reviewing, or even "where the problem is" can only be located by repeated probing | The lead agent runs it itself (mode B; once it is handed out, you can no longer pick up the user's answers) |
+| One or two blocks in total, or the number of dispatches for the whole round is small anyway | Do not hand it out; take the lower bound of that tier per main flow §6 |
 
-### 主执行者的三步
+### Three things the lead agent must do
 
-1. **固化被审对象**（改动实质 / 判定依据 / 有意保留项清单，见 `SKILL.md` §5）——这些**必须写进派工提示词**，否则编排者会把有意保留的旧词当残留报回来。
-2. **一次性派编排者**（模板见下）。
-3. **收结论 → 落地修复**；要审修复 delta 就**再派一个新的编排者**（无状态、干净，比让原编排者续跑更可靠）。
+1. **Freeze the object to be reviewed** (what the object is / acceptance criteria / intentional-omissions list, see `SKILL.md` §5) — these three **must be written into the dispatch prompt**.
+2. **Dispatch the orchestrator once** (template below).
+3. **Receive the conclusions → make the changes**; to review "the diff of this round's changes", **dispatch a new orchestrator** (a freshly opened
+   orchestrator has a very clean context and is more reliable than letting the old one keep running).
 
-### 编排者派工提示词模板（spawn prompt，照抄改）
+### Orchestrator dispatch prompt template
 
 ```text
-你是审查编排者，自己跑完一轮对抗审查，**只把结论交回**。
+You are the review orchestrator. You run one round of adversarial review yourself, **and hand back only the conclusions**.
 
-被审对象：<先跑 `git diff <base>..HEAD --stat` 与 `git diff <base>..HEAD` 取得全貌>
-改动实质：<做了什么、为什么>
-判定依据：<点名规范 / 父文档 file:line>
-有意保留项：<清单；不列会被误报为残留>
+Object to review: <how to retrieve it, and the absolute path of that one shared material everyone looks at>
+What the object is: <what this is, why it is done this way>
+Acceptance criteria: <if ready-made, say which spec / upstream document it is; if decided ad hoc, write those verbatim items here>
+Intentional omissions: <the list; if you do not list them, they will be reported back as defects>
+This round's uncertainty / cost of a miss: <low / medium / medium-high / high> (take the tier per main flow §6 accordingly, and **do not tier yourself down**)
 
-流程（自己派子代理完成，过程不需要回报）：
-1. 分区审查：按「规模与降档」表定分区数（2–6；>40 文件或规范+代码+prompt 混合体系时 5–6 个并含 1 个横切），并行派只读发现者，互不重叠、只读；每条问题给 file:line + 逐字原文 + 为什么 + 建议改法（old→new）。
-2. 去重（同一处被多个分区命中合并为一条）。
-3. 复核：需独立判断的单派、机械核对项按类合组（≤4 条/组）；复核者必须是全新子代理（不是发现者），允许判无效 / 部分有效，无效必须给 file:line + 原文反证。
-4. 汇总。
+Process (you dispatch the subagents and get it done yourself; no need to report the process):
+1. Partition and find problems: decide how many blocks per main flow §6, dispatch the read-only finders in parallel, and keep the blocks non-overlapping.
+   **Every finder's task must carry verbatim**: the <critical> read-only hard constraint, what the object is, the acceptance criteria, the intentional-omissions list, and the finding format (ID / location / verbatim excerpt / why / severity / minimal fix / confidence) plus the fixed table header (see `SKILL.md` §7).
+2. Deduplicate (where the same spot is hit by several blocks, or a fix is fully covered by another finding, merge them into one).
+3. Independent adjudication: dispatch the ones that need thinking separately; batch the mechanical checks together by category (≤4 per batch, and each item in a batch is judged independently); the adjudicators must be freshly dispatched (they cannot be the person who found it). They may rule invalid / partially valid; a ruling of invalid must give a location + counter-evidence from the verbatim text.
+4. Summarize.
 
-最终答复只含（≤ 20 行，超出即失败）：
-1. 一句话结论 + 判决分布（有效 / 部分有效 / 无效 各几条）。
-2. 发现表：`# | file:line | 判决 | 一句话问题 | 最小改法(old→new)`。
-3. 待用户决策项 —— 按「需要用户决策的问题」一节的六要素写；没有就写「无」。
-4. 你派了几个子代理（分区几个、复核几个），并确认复核者都不是发现者。
+In your reply give only these (for length and item count see `SKILL.md` §10; exceeding them counts as failure):
+1. A one-sentence conclusion + how many verdicts of each kind (valid / partially valid / invalid).
+2. The findings table: `# | location | verdict | one sentence stating the problem | minimal fix`.
+3. Items that need the user to decide — write them per the six elements in main flow §9; if there are none, write "none".
+4. How many people you dispatched in total (how many finders, how many adjudicators), and confirm that no adjudicator is a finder.
+5. For every item ruled valid / partially valid: the adjudication evidence (location + verbatim excerpt + **how that earlier check can be reproduced**: if it was a command, give the command; if you judged it by reading and comparing, list both locations and both verbatim excerpts) and the artifact path (so it can be read back on demand).
 
-禁止：把发现者 / 复核者的原始输出、表格、报告正文贴回来；禁止粘贴文件全文；**不要修改任何文件**（除非明确授权）。
+Not allowed: pasting back the raw output, the tables, or the report body of the finders and the adjudicators; pasting the full text of the object;
+**do not modify any object without authorization**.
 ```
 
-### 模式 A 的纪律
+### A few discipline points for mode A
 
-- **最终答复必须带 `old→new`**：下沉丢掉了主执行者「对发现是否被夸大」的直接手感，最小改法让主执行者能一眼判断，而不必重新取证。
-- **只审不改是默认**：要让它连改带修，得显式授权写权限，并且**串行化**——编排者持有工作区期间，主执行者不得编辑同一批文件。
-- **待决策项必须回传**：编排者无用户交互能力，「需要用户决策」不能就地解决，必须按 `SKILL.md` §9 的六要素交回主执行者。
-- **别为了「互相印证」让编排者把子代理输出摘要贴回来**——那等于把成本搬回主上下文；需要时按产物地址**按需回读**。
+- **The reply must carry concrete fixes**: once it is handed out, the lead agent loses the direct feel for "is this finding exaggerated"; with concrete
+  fixes it can judge at a glance, without going and checking it all over again.
+- **The default is review-only, no edits**: to let it fix as well as review, you must explicitly grant write permission, and it must be **serial** — while
+  the orchestrator holds the working tree, the lead agent must not edit the same batch of files.
+- **Items that need the user to decide must come back**: the orchestrator cannot talk to the user, and such questions cannot be settled in place, so they
+  must be handed back per the six elements.
+- **Do not let it paste back summaries of the subagents' output** — that moves the cost you saved straight back into the lead-agent context; when you need
+  it, read it by the artifact address.
 
-### 模式 B：主执行者亲自编排（不支持嵌套 / 需与人来回）
+## Mode B: the lead agent orchestrates itself
 
-主执行者自己按 `SKILL.md` 的 §5 → §6 → §7 走完「固化 → 分区发现 → 去重 → 逐条复核 → 修 → 修后审查」。适用：嵌套不可用；或改动定位本身要靠反复试探；或需要边审边与用户来回决策。
+The lead agent itself walks §5 → §7 → §8 of `SKILL.md`: "freeze the object → partition and find problems → deduplicate → independent adjudication → fix →
+review the fixes". When to use it: the people you dispatch cannot dispatch further; or even where the problem is can only be located by repeated probing;
+or you need to confirm back and forth with the user while reviewing.
 
-成本补偿手段（把模式 A 省下的固定开销尽量省回来）：
+Ways to save cost:
 
-- 分区数取规模表的**下限**（通常 1–2）；覆盖完整优先于分得细。
-- 机械核对项**按类合组**（`SKILL.md` §6），单组 ≤4 条——合组省掉的正是固定开销。
-- 一轮里的发现者、复核者**一次批量并行发出**；不要「发一个等一个」。
-- 子代理产物**落盘不回传**：任务里要求写 `<repo>/.review-scratch/<round>/<partition>.md`（**工作区内**，见 `SKILL.md` §5「落盘位置」），只回 ≤20 行结论 + 路径；主执行者按需读。
-- 每轮只把「判决分布 + 修复处数」记成一行归档，避免上下文堆积原始输出。
+- Take the **lower bound** of main flow §6 for the block count; partition coarsely rather than let coverage be incomplete.
+- **Batch the mechanical check items together by category**, ≤4 per batch — batching is exactly what saves that fixed overhead.
+- Send every finder and every adjudicator of a round **all at once**; never "send one, wait for one".
+- Subagent artifacts **land on disk and are not sent back**: require them to write to a directory the subagent can read (see `SKILL.md` §5), and to reply
+  with conclusions + path only; the lead agent reads them when it needs to.
+- Each round, record just "how many verdicts of each kind + how many places changed" as one archived line, so the context does not fill up with raw output.
 
-### 降级：两遍法（完全无派工能力时）
+## When you cannot dispatch a single one: use the two-pass method
 
-目标是**最小代价保住「发现者 ≠ 判者」**：
+The goal is to preserve "**the person who finds problems ≠ the person who judges problems**" at **the lowest cost**:
 
-1. **第一遍只发现**：以发现者身份通读被审对象，按 `SKILL.md` §6 的发现格式逐条写盘（编号 / `file:line` / 逐字原文 / 为什么是问题 / 建议改法 `old→new` / 置信度）。
-2. **中间必须换上下文**：清空当前工作假设（新开一轮对话 / 新会话），只带三样重新进入——发现清单文件路径、被审文件、判定依据。**不得**带着第一遍的结论记忆直接续写。
-3. **第二遍只判决**：逐条走 `SKILL.md` §7 的复核动作，每条给证据 / 边界 / 最小改法 / 反证；判「无效」必须给 `file:line` + 原文反证。顺序固定：**先逐条判决 → 再写小结**。
-4. **诚实标注**：两遍法只是**部分补偿**——同一个执行者分两次坐，仍有共享先验，不能宣称等价于独立复核。报告里写明「本轮为两遍法，无独立上下文复核」，并保留全部反证以便人复核。
+1. **The first pass only finds problems**: treat yourself as the finder, read the object under review end to end, and write each finding down per the
+   finding format in `SKILL.md` §7 (ID / location / verbatim excerpt / why it is a problem / severity / minimal fix / confidence).
+2. **You must swap context once in between**: empty out all the assumptions now in your head (start a new round of conversation / start a new session) and
+   re-enter carrying only three things — the file path of that findings list, the object under review, and the acceptance criteria. **Never** keep writing
+   with the first pass's conclusions still in memory.
+3. **The second pass only judges the problems**: go through each finding with the adjudication actions in `SKILL.md` §8, giving evidence / boundary /
+   minimal fix / counter-evidence for each; a ruling of "invalid" must give a location + counter-evidence from the verbatim text. The order is fixed:
+   **judge every finding first, then write the summary**.
+4. **Label it honestly**: the two-pass method can only count as **partial compensation** — the same person working in two passes still shares the same set
+   of preconceptions before and after, so you cannot claim it is equivalent to independent adjudication. The report must state "this round used the
+   two-pass method, with no independent-context adjudication", and must keep all counter-evidence, so a person can check it once more.

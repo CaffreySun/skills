@@ -9,7 +9,7 @@
     {
       "name": "caffreysun-skills",
       "source": "./",
-      "description": "Two quality-control loops for coding agents: task-spec before acting, adversarial-review-loop after.",
+      "description": "Two quality-control loops for coding agents: task-spec before acting, adversarial-review-loop on anything whose correctness needs independent verification.",
       "category": "engineering",
       "keywords": [
         "engineering",

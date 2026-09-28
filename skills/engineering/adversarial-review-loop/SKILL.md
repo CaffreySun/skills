@@ -1,366 +1,238 @@
 ---
 name: adversarial-review-loop
-description: 多文件改动的对抗审查：分区发现找问题 → 去重 → 逐条独立复核（需独立判断的单派、机械核对按类合组 ≤4 条、无效须给反证）→ 只修有效项 → 修复再送一轮，到 0；含 harness 自查表、两种编排模式、无子代理时两遍法降级。触发语：「用 subagent 审查/复核」「用 Agent 工具开几个审查者」「仔细审查这些改动」「修后审查」「确证没改漏改错」「该开几个 subagent」。
+description: >
+  Closed-loop adversarial review: freeze the object → partition it and hunt for problems in parallel → dedupe →
+  adjudicate every finding independently (anything needing judgement gets an agent of its own; mechanical checks
+  are batched, at most 4 per group; an "invalid" verdict must come with counter-evidence) → fix only what
+  survived → send the fixes back through review until a round yields neither a "valid" nor a "partially valid"
+  finding. The one core discipline: the context that finds a problem must never be the context that decides
+  whether it is real. Use it on any object whose correctness you cannot judge from the object itself, and where
+  missing a real problem costs far more than a false alarm. Trigger phrases: "review this carefully", "review
+  with subagents", "adjudicate the findings", "re-review after fixing", "make sure nothing was missed or wrongly
+  changed", "how many subagents should this take".
 ---
 
-# 改动闭环对抗审查（分区审查 → 去重 → 逐条独立复核 → 修 → 修后审查，直到收敛）
+# Closed-loop adversarial review
 
-**唯一的核心纪律**：发现问题的人和判断问题是否成立的人不能是同一个。
+**The one core discipline**: the context that finds a problem must never be the context that decides whether it is real.
 
-形状：固化对象 → 分区并行发现 → 去重 → 逐条独立复核 → 只修有效项 → 修后审查（只审修复 delta）→ 有发现则回到第 2 步，直到某轮 **0 条有效发现 + 0 条部分有效**。
+## 1. When to use it
 
-```mermaid
-flowchart LR
-  A[1 固化被审对象] --> B[2 分区并行发现]
-  B --> C[3 去重]
-  C --> D[4 逐条派新子代理复核]
-  D --> E[5 只修有效/部分有效]
-  E --> F[6 修后审查: 修复 delta 再送审]
-  F -->|0 条有效 + 0 条部分有效| G[终止]
-  F -->|有新发现| B
-```
+Don't look at what kind of object it is. Look at whether it has these three traits. All three have to hold:
 
-被审对象是**没有 diff 的已发布文档本身**（工单正文、在线文档、规格书草稿、
-提案）时，主体流程照走，另见 [`review-of-documents.md`](./review-of-documents.md)。
+1. **You cannot tell whether it is right by looking at the object alone.** You have to hold it up against a standard before you know how well it was done.
+2. **That standard can be settled before review starts.** It may already exist — a specification, a team convention, a higher-level document, a source of fact you can go and check. It may also not exist yet, as long as you settle it before you start, or the user hands it to you on the spot. What matters is that it is **settled before review begins**: change the standard halfway through and every verdict you already gave stops counting. (If you find the standard itself is ambiguous, ask about it once, per §9 — don't quietly rewrite it.) If you cannot settle it, this process turns into everyone arguing for their own opinion. Don't use it.
+3. **Missing a real problem is far worse than reporting a false one.** Independent adjudication costs extra, and "missing one hurts more than a false alarm" is exactly what makes that cost worth paying. When the two costs are about equal, checking the thing yourself is enough. (If the user explicitly asks for an independent review, this trait counts as satisfied — they have already made that call for you.)
 
-## 开始之前：先定位 harness
+When all three hold, the object can be anything: a batch of changes, a proposal, a migration plan, an audit, a release checklist, a piece of research, a contract, a decision record that has already been signed off.
 
-先看你的工具清单里有没有「派工」能力，它决定这一轮怎么编排。完整的
-五问自查表见 [`harness-probe.md`](./harness-probe.md)。
+It also applies when the user says "review this carefully" or "re-review after fixing". That sentence on its own satisfies the third trait (they asked for it explicitly). But if the first two don't hold — you can't tell right from wrong, or you can't settle the standard — leave it alone for now and settle the standard with the user first.
 
-一句话版：能派子代理 → 走「模式 A」（整轮下沉给一个编排者，默认）；
-不能派 → 走「两遍法」（同一执行者分两遍坐，第一遍只发现、第二遍只判决），
-并如实标注「无独立上下文复核」。
+## 2. Why it has to be a loop
 
-两种编排模式怎么选、两遍法的降级细节、可直接抄的派工提示词模板：
-[`orchestration.md`](./orchestration.md)。
+These three numbers explain why the process is shaped the way it is, and why none of its steps can be skipped:
 
-## 1. 何时用
+1. **Fixes introduce new problems of their own**: in measured runs, **16 of 51 fixes** introduced something new, or fixed one place and missed another — which is why every round of fixes has to go back through review.
+2. **Adjudication overturns a substantial share of findings**: roughly **1 in 5 to 1 in 3** findings ends up invalid or downgraded. What this step saves is not time; it is a batch of pointless edits.
+3. **It converges**: on a real project, the number of new problems each round found inside the previous round's fixes went **8 → 3 → 3 → 2 → 0**. The process is heavy, but it is not endless.
 
-- 一批多文件改动（10+ 文件，或规范 / 契约 / prompt / 术语表 / skill 等文档类改动）落地后，需要**独立、可核查地**确认：没有静默不一致、没有失效引用、没有漏改、没改错。
-- 用户说「仔细审查这些改动」「用子代理审查」「发现问题要复核确保有效」「修后审查」「确证没改漏改错」。
-- 自己刚做完跨 5+ 文件、或改了有连带影响的规范 / prompt / 契约。
-- 核心纪律：**发现问题的人和判断问题是否成立的人不能是同一个**。任何非平凡改动交付前按本流程走。
-- 被审对象是一份**已发布的方案 / 文档本身**（工单正文、在线文档、规格书草稿、提案），根本没有代码 diff：主体流程照走，另见 [`review-of-documents.md`](./review-of-documents.md)。
-- 用户抱怨「流程太重 / 太耗 token」，或问「这活该开几个子代理」「分区审查 / 批量复核 / 并行调研怎么切」→ 直接看下面 §6；那节的判据对**任意多子代理任务**成立，不只用于审查。
-- **默认下沉**：整轮交给一个编排者跑，主执行者只收结论（[`orchestration.md`](./orchestration.md) 模式 A）——这是控制主上下文成本的关键开关。
+The worst defects are usually not the ones you find by walking a checklist. They are the ones an adjudicator pulls out by asking a question nobody else asked: "this edit — which path that should have changed alongside it did it miss?"
 
-### 前置条件
-
-- 有派工能力（判定见 [`harness-probe.md`](./harness-probe.md)）；完全没有则 [`orchestration.md`](./orchestration.md) 的两遍法，并如实降级报告。
-- 有一份「什么算正确」的规范依据可点名（规范 / 约定 / 父文档）。
-- 已能提交 / 回滚工作区（收尾要确认改动面）。
-
-## 2. 规模与降档（别对小改动上全流程，也别一律拉满分区）
-
-| 改动规模 | 分区数 | 做法 |
-|---|---|---|
-| ≤3 文件 / 单点 | — | 不上本流程：自查 + 跑相关测试 |
-| 3–10 文件、改动同源 | 1–2 | 半程：合组复核（≤4 条/组），不强制多轮修后审查 |
-| 10–15 文件 / 单一体系 | 2–3 | 全流程；覆盖完整优先于分得细 |
-| 15–40 文件 / 多体系 | 3–4（含 1 个横切） | 常规档 |
-| >40 文件 或 规范+代码+prompt 混合 | 5–6（含 1 个横切） | 6 是上限，再多是重复劳动 |
-| 10+ 文件 / 规范 · 契约 · prompt · 术语表类 | 按上行 | 全流程 |
-| 用户明确要求「确证没改漏改错」 | 按上行 | 无论规模都上全流程 |
-
-## 3. 为什么必须闭环
-
-三条实测结论决定了本流程的形状，逐条照做即可：
-
-1. **单个审查者不够**：会漏掉跨文件口径、会把夸大当缺陷。分区审查 + 逐条独立复核同时压掉假阳性与假阴性。
-2. **每一轮修复本身必须再受审**：实测某项目 51 处修复里有 **16 处是「修复自身引入或漏改」**。循环到某轮 **0 条有效发现**才终止。
-3. **复核会推翻相当比例的发现**：约 1/5 ~ 1/3 被判无效或降级。这一步是省下无效改动的关键，不能跳。
-
-实测收敛轨迹 **8 → 3 → 3 → 2 → 0**（某项目 24 文件规范 + 代码改动，各轮修后
-审查在**上一轮修复里**又找出的新问题数）。最重的两条设计缺陷都不是清单式核对
-发现的，来自复核者的**主动探针**（「这条改动漏了哪条既有路径？」）。
-
-## 5. 固化被审对象
-
-```bash
-S=$(git rev-parse --show-toplevel); mkdir -p "$S/.review-scratch"
-git diff > "$S/.review-scratch/<change>.patch" && wc -l "$S/.review-scratch/<change>.patch" && git status --porcelain
-```
-
-补丁给审查者提供**统一审读入口**；`git status --porcelain` 用于最后确认没有意外文件被改。
-
-把被审文件与全部取证底稿都落到**派工对象读得到的目录**，在派工提示词里给**绝对路径**（子代理读不到你的会话上下文，也不知道你心里的路径）。
-
-#### 落盘位置（踩过：落错地方 = 子代理读不到）
-
-- **默认落在工作区内的 scratch 目录**：
-  ```bash
-  S=$(git rev-parse --show-toplevel); mkdir -p "$S/.review-scratch"
-  ```
-  原因：多数 harness 把子代理的读取范围限制在工作区内，而系统临时目录（`/tmp`）在工作区外；**无头 / 非交互会话下通常没有授权弹窗可批，直接判读不到**——实测某个 CLI harness 的无头模式（`-p` 一类）下子代理读 `/tmp/...` 被拒，把同一批文件放进工作区后立刻正常（见附录 B）。
-- **别让它污染 `git status`**：把 scratch 目录写进**本地排除文件**，不要动被跟踪的 `.gitignore`：
-  ```bash
-  printf '/.review-scratch/\n' >> "$S/.git/info/exclude"
-  ```
-- **只有在确认子代理能读工作区外时才用系统临时目录**。有的 harness 的子代理可直接读 `/tmp`（见附录 A），但统一用工作区内目录也不会有副作用，跨 harness 更省心。
-
-同时（**逐条**）写清三样东西，它们要**原样**进入每个发现者的任务：
-
-1. **改动实质**：这批改动做了什么、为什么（如「术语替换 / 规则改写 / 删除某概念」）。
-2. **判定「正确」的依据**：点名规范 / 约定 / 父文档。
-3. **有意保留项清单**（必列，五类；历史提及 / 语料示例 / 与主题无关的同名词都归入这五类）——**不列这清单，审查者会把有意保留的旧词当残留报回来**，这是噪声的第一来源，会淹没真发现：
-   1. 用户已拍板的排除项：本期不做 X / Y / Z——不得报为遗漏；只能报「不做的后果是否被交代清楚」。
-   2. 刻意不写实现细节（接口名 / 字段名 / 变量名 / 表名）——不得报为缺陷。
-   3. 被否决的备选方案（对比论证）——不是残留。
-   4. 沿用仓库既有术语——不得报为用词问题。
-   5. 上轮已判决并修到位的项——只有「未改到位 / 改歪 / 引入新问题」才算本轮发现。
-
-## 6. 分区与派工（粒度决定成本）
-
-分区数与派工粒度共同决定成本，也决定正确性，而两者的默认值往往都是错的：**「一条发现一个子代理」「一个文件一个子代理」是最贵形态**。分区数照 §2「规模与降档」表定。
-
-**成本模型**：每个子代理都有一份**与任务内容无关的固定开销**（系统提示 + 工具定义 + skill 列表，量级数千 token）。N 个子代理的总成本 ≈ N × 固定开销 + 总正文；**合组省掉的正是固定开销**，只要不破坏独立性就不损正确性。分区数翻倍 ≈ 成本翻倍，而边际发现率快速下降——**分区数不是越多越好**。
-
-一次批量发出，互不重叠。同层任务本无依赖，**必须一次批量并行**（串行派、等结果是反模式）；只有「上一轮结果决定下一轮分工」的情形才串行，例如修复后的复验要另起一轮。每个分区任务是**只读**的，给可执行的取证手段（读文件 / 全仓 grep / `git diff`）。
-
-**任务描述必须写进**：
-
-1. `<critical>` 级硬约束：**只读**——不得改文件、不得 `git add` / `commit`，不跑测试 / lint / 全量测试；也禁 `git` 写操作。
-2. 改动实质 + 判定标准（点名依据文件）+ 有意保留项清单。
-3. 每条问题必须给：编号 / `file:line` / **逐字原文摘录** / 为什么是问题 / 建议改法（`old→new`）/ 置信度。禁止「建议加强一致性」这类空话。
-4. 输出格式表：`# | 位置 | 严重度 | 原文摘录 | 问题 | 建议改法`，表后附「无法判定项」。允许并接受**「零问题」**结论。
-
-### 分区维度（两种做法，按场景选）
-
-**做法 A：按文件分区**（多文件、改动铺开在大批文件上时用）
-
-- 按**文件**而不是按主题切，避免同一文件被两个分区重复报告。
-- 每个分区执行者拿：目标文件清单 + 本次改动的实质说明。
-- **固定加一个横切执行者**：全仓 grep 旧词残留、内部链接 / § 引用有效性、被删除概念的下游消费者、「代码零影响」类论断的核实。
-
-**做法 B：按权威分层 + 横切单列**（规范 / 文档体系分层清晰时用）
-
-- 不要按文件数量平均分。典型 5 片：
-
-| 分区 | 覆盖 | 审什么 |
-|---|---|---|
-| 规范主体 | 定义规则的那个文件 | 规则编号自洽、术语与正文一致、值域与表结构互洽 |
-| 流程手册 | 描述谁何时做什么的文件 | 与规范是否互证、有无半改痕迹、附录 / 速查 / RACI 是否同步 |
-| 执行资产 | prompts / skill / 脚本 | 自包含性、跨文件逐字一致、步骤编号与交叉引用仍有效 |
-| 周边文档 | 入口 README、外部需求文档、待办台账 | 引用是否失效、待办编号 / 格式、事实陈述是否仍属实 |
-| 横切 | 全仓 grep + 链接有效性 + 「零影响」论断核实 | 旧词残留、新词措辞统一、漏改文件点名 |
-
-- 两种做法可并用的折中版（按文件 / 职责切分，互不重叠）分区建议：① 规范 / 核心文件 ② 主流程文件 ③ 执行侧产物（prompts / 脚本 / skill）④ 周边入口（README / 规格书 / 待办）⑤ 横切（跨文件一致性 + 「零影响」类论断 + 全仓 grep + 链接有效性）。
-
-### 关于结构化回报
-
-- 想要结构化回报时给执行者明确 schema 说明；强判断型执行者可能自带 JSON schema，会把细节压进 explanation / 压成 prose（丢 `file:line` / `old→new`）——**别把这类输出直接当结论**。
-- 有则按产物地址读全文，或向它**追问**（如「只按格式补这 N 条的定位与改法 / 只输出这 N 条的完整格式」）。
-
-### 派工判据：单开还是合组（三轴，任一为「是」→ 单开）
-
-| 轴 | 问题 | 单开的例子 |
-|---|---|---|
-| **判断力** | 结论依赖语义冲突 / 自洽性 / 是否真缺口 / 是否造成歧义 / 权衡取舍？还是只需机械核对（某行是否这样写、某词是否残留、某引用是否还能解析、计数是否一致）？ | 语义、规则自洽、契约解释 |
-| **后果代价** | 结论会改行为、契约、对外承诺、流程语义，或不可逆？ | 改代码、改流程、改标签语义 |
-| **争议复检** | 上一轮已被推翻 / 降级过的项又被提出？ | 前轮判「部分有效」的项 |
-
-**判不准 → 单开。** 宁可多花一点，也不要放过争议项或高代价项。
-
-落到本轮待复核发现上的三分类（与上面三轴一一对应）：
-
-| 类 | 哪一轴命中 | 分派 | 用哪类执行者 |
-|---|---|---|---|
-| **需独立判断** | 判断力轴，或后果代价轴 | **1 项 1 子代理单派** | 强判断型 / 重读型 |
-| **机械核对** | 三轴皆否（判决只是「某行是否真这样写 / 某词是否还有残留 / 某引用是否还解析得到 / 计数是否一致 / 某命令是否真按此输出」） | **按类合组，单组 ≤ 4 条** | 轻量读型 |
-| **争议复检** | 争议复检轴 | **单派** | 强判断型 / 重读型 |
-
-15 条发现全单派 = 15 份固定开销，其中真正需要独立判断的往往只有 3–5 条。
-
-### 分组维度（合组时「按类」的具体分法）
-
-1. **同一分区命中的 → 同组**（上下文同源：读一次文件就能覆盖同组多条，成本最低）。
-2. 跨分区但**同一文件**的 → 按文件聚合。
-3. 跨体系（规范 vs 代码 vs prompt）的 **不要合组**——那类需要交叉判断，正是「需独立判断」。
-4. 条目数过多时按数量切分（单组仍 ≤4）。
-
-### 合组的硬约束（不写这些，合组 = 自我污染）
-
-同一份上下文里连续判多条会互相锚定，必须逐条防：
-
-1. **组内逐条独立给判决**：每条都要「证据 / 边界 / 最小改法 / 反证」；**禁止「同上」「该类整体有效 / 整体没问题」**。
-2. 明确写进任务：**不得因组内其他项的判决影响本项**；输出顺序是「先逐条判决 → 再写组内小结」，不许倒过来。
-3. 组内**不得含同一处的多条发现**（同处先当一条去重）。
-4. 组内条目**按文件 / 乱序排**，不要把「同类同结论」的挨在一起（顺序会诱导橡皮图章）。
-5. 合组**不减要求**：组内每条的凭据要求与单派完全相同（照 §7「复核」），不得因为「一次判多条」而省略。
-6. **抽检**：若某组返回「全部有效且无一条被收窄」，从该组挑风险最高的一条**单独再复核一次**——这是防批量橡皮图章的便宜手段。
-
-### 规模公式与上限
-
-- **子代理数 ≈ 单派项数 + ⌈合组项数 / 4⌉**；**上限 = 审查分区数 × 2**（超了说明该先减少分区或再认真去重）。
-- 实测对照：15 条机械发现，全单开 = 15 个子代理；同一批若其中有 2–4 条需单开，合组后 = **6–7 个**；若 15 条都是纯机械核对项，按 ≤4 合组 = **4 个**。
-
-### 选型
-
-- **机械核对 → 轻量读型执行者**：快、便宜，适合「某行是否真的这样写 / 某词是否已登记 / 某引用是否还解析得到」；**需要判断力 → 强判断型 / 重读型执行者**：语义冲突、规则自洽、「这算不算真缺口」、是否真会导致执行歧义。**选反了要么判不动，要么白花钱。** 两类可混在同一个批量调用里并行发出。
-- 轻量读型执行者可能**没有 shell 工具**：需要 diff / 命令输出时，由主执行者跑好并把原文（如 `git diff -U2 -- <file>` 的 hunk）发过去。
-
-## 7. 去重 / 复核 / 修复 / 修后审查 / 终止判据
-
-整轮形状（第 6 步完成后回到第 2 步重新分区并行发现——**不是**回到第 1 步：被审对象在循环期间不变）：
+## 3. The shape of the loop
 
 ```mermaid
 flowchart LR
-  A[1 固化被审对象] --> B[2 分区并行发现]
-  B --> C[3 去重]
-  C --> D[4 逐条派新子代理复核]
-  D --> E[5 只修有效/部分有效]
-  E --> F[6 修后审查: 修复 delta 再送审]
-  F -->|0 条有效 + 0 条部分有效| G[终止]
-  F -->|有新发现| B
+  A[1 Freeze the object] --> B[2 Partition, hunt for problems in parallel]
+  B --> C[3 Dedupe]
+  C --> D[4 Independent adjudication: judgement calls get their own agent, mechanical checks batched max 4 per group, no dispatch possible means two-pass]
+  D --> E[5 Fix only valid or partially valid]
+  E --> F[6 Re-review the fixes: only this round's delta]
+  F -->|0 valid + 0 partially valid| G[Stop]
+  F -->|valid or partially valid again| B
 ```
 
-### 去重
+Before each round starts, **first confirm the object in your hands is identical to the frozen copy**; if it isn't, freeze it again and go back to step 1. Short of that, every round goes back to step 2, never to step 1.
 
-同一处被 2–3 个分区**独立**命中 = **提高可信度**，合并为一条并在复核时点明。去重后得到本轮待复核清单。
+## 4. Before you start: find out what this machine can actually do
 
-### 复核（复核者必须与发现者分离）
+First check your tool list for the ability to hand a task to another independent context. That is what decides how this round is orchestrated; the five-question self-check is in [`harness-probe.md`](./references/harness-probe.md).
 
-- **绝不复用发现者**（也不复用其他发现的复核者）——这条永远成立。（无派工能力时按 [`orchestration.md`](./orchestration.md)「两遍法」。）
-- 分派粒度（需独立判断的单派、机械核对项按类合组 ≤4 条、怎么分组、合组硬约束、子代理数上限、选型）**一律按下面 §6** 执行；以下是复核这一环独有的动作。
-- 把 **claim 原文 + 它的错误论据**完整转述给复核者，否则无法真正证伪。**只给「请确认这条对不对」会诱导附和。**
-- 任务正文明确写：
-  - 「不要假设它成立，**自己读文件取证**」；
-  - 「若站不住就判**无效**并给反证，**不要附和**」；
-  - 部分成立判「部分有效」并**划清边界**。
-- **输出合同**（固定三档判决）：
+Can you dispatch subagents, can those subagents dispatch further (that is, is there nesting), and can you dispatch several in parallel at once → by default hand the whole round to a single orchestrator ([`orchestration.md`](./references/orchestration.md) mode A; this is the key switch for controlling the cost of your main context). Can you dispatch, but not nest, or not run in parallel → use mode B, where the lead agent orchestrates (the trade-off is covered at the end of [`harness-probe.md`](./references/harness-probe.md)). Can you not dispatch at all → use the two-pass method, and state plainly in the report that "this round had no independent-context adjudication".
 
-  | 字段 | 内容 |
-  |---|---|
-  | 判决 | 有效 / 部分有效 / 无效（固定三档） |
-  | 证据 | 自取证：`file:line` + 原文 |
-  | 边界 | 仅「部分有效」：成立 / 不成立条件，写清限定条件（位置对但归因错、影响被夸大、历史遗留而非本轮引入） |
-  | 最小改法 | 可直接替换的 `old→new` 文本 + 连带影响（改它还要同步哪些 `file:line`） |
-  | 反证 | 仅「无效」：`file:line` + 原文 |
+### Preconditions
 
-- 预期命中率：**约 1/5 ~ 1/3 的发现会被判无效或降级**（实测一例：**11 文件规范重构**，5 个分区审查者 → 14 条发现 → 14 个复核者全单派 → 1 条判无效、7 条降为「部分有效」并收窄影响面；另一例被推翻的理由如「研发仓是 umbrella，claim 前提不成立」「零消费者 + 空值，不需交代」）。**这一步是省下无效改动的关键，不能跳。**
-- 复核者常会指出「claim 里哪句夸大」——**保留这部分**，它决定修复范围（是改文档措辞，还是真改行为）。
+- You have settled the standard from trait 2 of §1.
+- The object can be retrieved, can be stored, can be compared before and after a change, and can be rolled back if needed.
 
-### 只修经复核的项
+## 5. Freeze the object under review
 
-- **只修「有效 / 部分有效」**。**「部分有效」按复核给的收窄后改法改**，不要按原发现的夸大版改（复核的改法有时仍基于被夸大的影响，要按限定条件裁剪，例如只修真隐患的那一半）。
-- **无效项不修**，但在最终回复 / 报告里给出「为什么不改」的**反证**——这既是给用户的交代，也证明复核确实起了作用，还能避免下次同一问题被重新提起。
-- 同文件多处编辑**串行**，跨文件**并行**。
-- 优先使用复核给出的 `old→new`，可减少二次偏差。
-- 批量替换：同文件多处改动用脚本批量替换（精确 `old→new`，先 `assert s.count(old) == 1` / `count` 断言命中数；命中 0 就打印出来，**别静默跳过**）。
-- 全局替换 token 时**警惕历史语料**：把 `主研发仓新增`→`仓新增` 时，会把兼容清单里的旧取值名 `主研发仓新增归档` 也改坏——**旧名必须原样保留**。
-- **既有遗留错误**若就在你改动的同一行 / 同节，顺手修（成本 1 句、零连带）；否则登记为独立遗留项，**不要静默放过**。
-- **修复轮不要顺手扩大范围**（如改解析器 / 加机制）——复核常会推翻这类扩面建议（例如「加 `re.S` 修多行命令」会连带破坏块解析）。
+Two things need freezing: **one unified body of material for reviewers to read**, and **one fingerprint you can compare against repeatedly**. This has nothing to do with whether you use version control. Freezing those two takes four steps:
 
-### 修后审查（回到第 2 步）
+1. **The copy has to live somewhere subagents can read it**: by default a scratch directory inside the working tree (most harnesses only let subagents read inside the working tree, and a headless session usually has no permission prompt to click — if it can't read it, it can't read it). The dispatch prompt must give an **absolute path**. Under version control it will show up as untracked; keep it out of the way by adding it to the repository's local exclude file (get its path with `git rev-parse --git-path info/exclude`) — note that this is a persistent change to local configuration. With no version control, just put it somewhere nothing else reads.
+2. **Record the content fingerprint, how to retrieve it, and this round's baseline** (byte count / digest / retrieval command) — the fingerprint proves **this copy has not been changed from outside since the moment it was frozen**. The object changing because of this round's own fixes is normal and does not count as "changed from outside"; when that happens, freeze it again per §3 and record a new fingerprint (save this round's fix delta first). This copy is itself the baseline for comparing across rounds. Where version control exists, you may separately record an identifier for a working-tree snapshot (for example the output of `git stash create`) as a backup.
+3. **Record what you intend to change this round.** With version control, `git status --porcelain` lists it. Without it, hash every file before you start and again after you finish; comparing the two tells you what actually moved. Check that against your plan and confirm you touched nothing outside it. If you can do neither, write clearly in the report that "this part rests on self-report plus manual checking" — do not write it as though you had confirmed it.
+4. **Prepare the unified material**: if there is a delta, give the delta (with version control, use the kind that includes staged changes; for newly added files run `git add -N` first — a bare `git diff` shows neither staged changes nor new files; if you cannot produce a delta, give full copies of those files instead). If there is no delta, give full copies.
 
-把**本轮全部修复**当作新一批改动送审：**对象 = 修复 delta，不是全量**。分区、去重、复核、修复，与前面完全相同。
+Alongside that, write these three things out **item by item**, and put them into **every finder's task verbatim**:
 
-### 终止判据
+1. **What the object is**: what this material is, and why it was done this way.
+2. **The acceptance criteria**: write down what this review is judging against. If it is an existing specification, convention, or higher-level document, name which one. If it was settled on the spot, write the text of those criteria here.
+3. **The intentional-omissions list** (required; write "none" if there is nothing on it; the common categories are below — add or drop them to suit the object). **Without this list, reviewers will report the things you deliberately left alone as defects** — that is the number one source of noise, and it buries the real findings:
+   - Scope or level of detail already declared out of bounds: not doing X / Y / Z this round — must not be reported as an omission; the only reportable thing here is whether the consequences of not doing it were spelled out.
+   - Implementation details deliberately left unwritten — must not be reported as defects.
+   - Alternatives that were considered and rejected (the counter-argument for them) — these are not leftovers.
+   - Existing terminology carried over — this is not a wording problem.
+   - Items already adjudicated and settled in a previous round — only "not actually fixed / fixed in the wrong direction / introduced a new problem" counts as a finding this round.
 
-- **某一轮修后审查得到 0 条有效发现、且 0 条部分有效**（部分有效项必须先按收窄后的改法落地）→ 循环终止。
-- **不要**用「跑通测试 / grep 清零 / 机械回归」代替修后审查——那只是收尾回归，不构成对抗审查。
-- 复核结论可能**推翻先前轮次的裁定**（新证据出现时，例如「同图主路径已补、逆向未补 = 自相矛盾」）；**以新证据为准**，并在回复中如实报告推翻。
+## 6. How many blocks, and when not to bother at all
 
-## 9. 求决门槛、收尾回归、报告模板、自检清单
+Don't go straight to maximum process, and don't always split into many blocks. **How many blocks you use is decided by three properties of the object**: how many mutually non-overlapping pieces it cuts into, how much uncertainty there is, and how high the cost of a miss is. **The table below is a starting point, not something to look things up in**; for combinations it doesn't cover, work it out yourself the same way. As a rule, don't go past 6 blocks — beyond that you get fewer and fewer new findings, while every dispatch still costs a fixed overhead. If the object genuinely splits into a dozen independent modules and you have to add more, then add more, but know that you are paying that overhead. One more rule to keep is the partitioning principle in §7. And if the cost of a miss is irreversible, or touches an external commitment, run the full process no matter how few blocks it would cut into.
 
-### 需要用户决策的问题（求决门槛）
+| How many non-overlapping blocks | Uncertainty / cost of a miss (whichever is higher) | Starting point |
+|---|---|---|
+| 1 block, or right and wrong are plain at a glance | Low / about the same as a false alarm | Usually not worth this process — checking it yourself is enough. But an explicit request from the user overrides this row: it settles trait 3 on its own, so run the process whenever traits 1 and 2 hold |
+| 2–4 | Low | 1–2 blocks; adjudication may be batched (max 4 per group), no requirement for multiple fix-and-re-review rounds |
+| 5–8 | Medium | 2–3 blocks; coarser is better than incomplete |
+| >8, or the blocks need to be read against each other | Medium-high / High | 4–6 blocks; the standard approach |
 
-审查中一定会撞上「证据不够、两种做法各有理」的问题（要不要改语义、要不要收窄承诺、要不要动阶段 / 标签、要不要扩面）。这类问题**最终要人来定**——但**求人本身消耗用户的注意力，必须先自证「确实只能由人定」**。默认动作是「自己查清后按依据执行」，不是「问用户」。
+**When in doubt, cut one more block** — dispatching one or two extra agents costs far less than missing a problem.
 
-**求决前必须走完三步**：
+## 7. How to partition, and how to dispatch
 
-1. **先穷尽取证**：读文件 / grep / 跑命令 / 查 git 历史能判定的，一律不许问。典型可自证问题：「这段是否还被引用」「这个取值还有没有消费者」「上次同类改动怎么处理的」。
-2. **先找既有裁定**：仓库规范、父文档、既有先例是否已定口径（同层多数派写法、术语表已登记名、上一次同类改动）。**有依据 → 按依据执行**，并在报告里写明「依据：`file:line`」，不问。
-3. **派独立复核确认「不可判定」**：让复核者回答「这里为什么证据不足」以及各选项的后果差异。**复核能给出依据的，按依据执行**——这一步经常直接把问题消掉。
+The partitioning and dispatch criteria in this section **hold for any multi-subagent task, not just review** (parallel research, bulk checking, and so on).
 
-**只有同时满足四条才上交用户**：
+Tasks at the same level go out all at once, with no overlap between them. Tasks at the same level have no dependencies on each other, so they **must go out as one parallel batch** (sending one, waiting for it, then sending the next is wrong); things only need to be serial when what the next round looks like depends on how this one came back. Every block's task is **read-only**.
 
-- ① 取证已穷尽（能列出查了哪些、结果如何）；
-- ② 规范 / 先例**没有**可援引的裁定——是逐条列过都不适用，不是你没找；
-- ③ 各选项**后果实质不同**：影响行为、契约、对外承诺、可逆性；**措辞 / 格式 / 命名偏好不算**（那类按同层多数派或仓库惯例自行定，有复核建议的按复核建议裁）；
-- ④ 后果**不可逆或影响面超出本次改动范围**（改阶段序列、改契约、动发布物等）。
+**Why batch whenever you can — here is the arithmetic**: every dispatch carries a fixed overhead that has nothing to do with the task's content (system prompt, tool definitions, skill list — on the order of a few thousand tokens). Dispatching N times costs roughly N × that fixed overhead, plus all the content. **Batching is what saves you that overhead**, and as long as it doesn't break independence, it doesn't cost you correctness. Conversely, doubling the number of blocks roughly doubles the cost, while the new findings get thinner and thinner.
 
-只满足 ①② 是「待定、但可按惯例自行推进」；**四条同时满足**才是「必须用户决策」。
+**Every block's task has to carry these**:
 
-**上交时必须给足信息**（不要把题甩给用户）：一次性集中提问，**不要一条一问**；每条包含：
+1. A `<critical>`-level hard constraint: **read-only** — don't modify the object, don't commit, don't run the full test suite or lint. Apart from writing its own artifact into the scratch directory you designate (see §5), it must not touch any other file in the working tree.
+2. What the object is + the acceptance criteria (spelling out what it is being judged against) + the intentional-omissions list.
+3. Every finding has to give: an identifier / **location** (where it sits in the object — line number, section number, item number, whichever suits the object) / **verbatim excerpt** / why this is a problem / **severity** / **minimal fix** / confidence. No empty phrases like "consider improving consistency".
+4. A fixed-format table: `# | Location | Severity | Excerpt | Problem | Minimal fix | Confidence` (severity means **how big the impact is**; name the three tiers yourself to suit the object, for example "must fix / should fix / optional" — when the object is a release artifact, the top tier is "blocks release"). This is a different thing from the three verdict tiers in §8; don't mix them up. Follow the table with an "items that could not be judged" section. **"No problems at all" is an allowed conclusion.**
 
-| 要素 | 要求 |
+### Partitioning principles
+
+The blocks **must not overlap, and together they must cover everything**. **When there are 2 or more blocks, exactly one of them is cross-cutting** (its job is to go after leftovers, check whether references still resolve, and verify claims like "this has no impact").
+
+What you cut along, and what unit you count in, is yours to decide based on the object — files are just one unit, for when the object happens to be a pile of files.
+
+### Deciding whether a finding is dispatched on its own or batched (ask three questions first; a "yes" to any one of them means dispatch it alone)
+
+| What you're judging | The question to ask | If "yes" |
+|---|---|---|
+| **Does it take judgement?** | To decide this one, do you have to understand a semantic conflict, check whether it is self-consistent, decide whether it is really a problem, decide whether it will cause ambiguity, or weigh a trade-off? Or is it enough to just check a fact (is this really what that line says, does that reference still resolve, is the count right, is anything missing from the list)? | **Dispatch it to an agent of its own**, using an executor that is good at judgement |
+| **What does getting it wrong cost?** | Would this verdict change behaviour, a contract, an external commitment, or the meaning of a process — or cause something irreversible? | **Dispatch it alone** |
+| **Is it an old debt?** | Is this something a previous round already rejected or downgraded, now being raised again? | **Dispatch it alone** |
+| None of the three | — | **Batch it by category, max 4 per group**, using an executor that only does mechanical checking |
+
+**When in doubt, dispatch it alone.** Fifteen findings all dispatched separately means fifteen fixed overheads, when only 3–5 of them actually needed judgement.
+
+Whether a finding can be batched with others **depends on what has to be done to judge it, not on which block it came from**: anything that requires reasoning across several sources at once (conflicting conventions, self-consistency, whether it is really a problem) always goes out alone, never in a batch. If there are too many items, split them by count, still max 4 per group.
+
+### Rules that must hold when batching (break them and batching bends the judgement instead)
+
+Judging several items one after another in the same context means each one gets coloured by the one before it. So fence each of them off:
+
+1. **Every item in the group gets its own verdict**: each one needs evidence / boundary / minimal fix / counter-evidence. **"Same as above" and "this whole category looks fine" are not allowed.**
+2. The task must say explicitly: **when judging one item, do not let the others in the group influence you**. The output order is fixed: **finish every verdict first, then write the group summary** — never the other way round.
+3. A group **must not contain two findings about the same place** (dedupe those into one first). And **shuffle the order of the items** — don't put same-category items with the same conclusion next to each other (adjacent placement invites copying one answer down the list).
+4. **Batching does not lower the bar**: every item judged in a batch carries **exactly the same** evidentiary requirements as one dispatched alone. "I'm judging several at once anyway" is never a reason to drop the evidence, the boundary, or the counter-evidence.
+5. **Spot check**: if a group comes back saying "all valid, and not one of them was narrowed", pick the highest-risk item in that group and send it through adjudication again, alone.
+
+### How many dispatches, and which kind of executor
+
+**Dispatches ≈ the finders (one per block) + the adjudicators (items sent alone + ⌈batched items / 4⌉ + groups that triggered a spot check)**.
+
+Look at **the adjudication half**: if it clearly exceeds **block count × 2**, don't rush to dispatch. Go back and check two things first — are there duplicate findings that should have been merged? Have some items been filed as "takes judgement" when they are really mechanical checks? Once you have checked both and there genuinely is nothing left to cut (every group is already sliced to the max 4, everything mergeable is merged), then **dispatch the number you computed**: **this reference line exists to catch adjudications that didn't need to happen, it is not a hard ceiling.** What you are trying to push down is the count of items that "must go out alone", not the number of blocks — cut the blocks and this reference line shrinks with them.
+
+Mechanical checking goes to an executor that only checks; work that takes judgement goes to an executor that is good at it — **get that the wrong way round and you either can't get a verdict, or you pay for nothing**. An executor that only does mechanical checking may have **no shell tool**: when it needs to see a diff or command output, the lead agent runs it first and sends the raw text over.
+
+## 8. Dedupe · independent adjudication · fix only what survived · re-review the fixes · when to stop
+
+### Dedupe
+
+When the same place is hit **independently** by 2–3 blocks, that is a sign of higher confidence: merge them into one finding and say so when it goes to adjudication. **Findings in different places whose fix is fully covered by another finding get merged here too** (keep only the broader one, and note that the other is covered by it) — don't leave it until the fixing step and edit the same thing twice.
+
+### Independent adjudication (the one judging must not be the one who found it)
+
+- The adjudicator **must never be the one who found it**. If the same finding goes through adjudication again (a later round, or a spot check), it also cannot reuse its earlier adjudicator — this has no exceptions. Both rules are about the same finding: **batching several different findings under one adjudicator, per §7, is allowed**. When you cannot dispatch anyone, use the two-pass method in [`orchestration.md`](./references/orchestration.md). How many to dispatch, how to group them, what batching requires, how to control the count, and which executor to pick all follow §7.
+- You have to pass on **the original finding's text and the argument it came with** in full — **saying only "please confirm whether this is right" invites agreement**. The task must also say explicitly: "don't assume it holds, go and look, go and check"; "if it doesn't stand up, call it invalid and give counter-evidence — don't just agree"; "if part of it holds, call it partially valid and draw the line between what holds and what doesn't".
+
+**The adjudicator must hand back exactly these five things** (none of them can be missing, and a bare conclusion is not enough):
+
+| What | Content |
 |---|---|
-| 问题 | 一句话，具体到 `file:line` 或具体行为 |
-| 已查证 | 你查了什么、结果如何（证明不是把判断成本转嫁给用户） |
-| 选项 | 2–3 个，每个写**后果与代价**（影响面、可逆性、需连带改哪些地方） |
-| 建议 | 你的推荐 + 理由（有推荐才叫分析过） |
-| 默认走向 | 用户不回答时本轮先按什么落；确实无法默认才写「阻塞此项」 |
-| 回答方式 | 让用户能一句话答（如「选 A」），不要开放式作文题 |
+| Verdict | Valid / partially valid / invalid — these three tiers only |
+| Evidence | What you looked up yourself: **location** + verbatim excerpt + **how to reproduce the check you made** (if it was a command, give the command so someone else can re-run it; if it was a reading comparison, give both locations and both texts) |
+| Boundary | Only when the verdict is "partially valid": the conditions under which it holds, and the conditions under which it doesn't (for example the location is right but the cause was misjudged, the impact was overstated, or it is long-standing rather than introduced this round) |
+| Minimal fix | A version someone can edit straight in (for a replacement, write `old→new`; for an insertion, a deletion, or something a human has to decide, say where it goes, what comes out, and what the content is) + whatever else has to change along with it |
+| Counter-evidence | Only when the verdict is "invalid": **location** + verbatim excerpt |
 
-**不许停摆**：
+Adjudicators also frequently point out **which sentence in a finding overstated things** — **keep that remark in the report**, because it decides how much actually gets changed.
 
-- **不要因为「要问用户」而中断整轮审查**：其余有效项照常修完、修后审查照常跑；决策项登记下来，最后与其他遗留项一起在报告里集中上交。
-- 若某决策项是后续动作的前置（不决策无法继续），明确写成「阻塞项 + 阻塞了什么」，不要含糊地留在末尾。
+### Fix only what survived
 
-### 收尾回归校验（每轮都做，必须给出原始输出）
+- **Fix only the "valid" and "partially valid" ones.** For a "partially valid" finding, follow the narrowed-down fix the adjudicator gave — do not fix the inflated version from the original finding. Multiple edits in the same file are made one after another in order (they cannot be parallel); different files can be edited at the same time. Prefer the ready-made fix the adjudicator supplied.
+- **Do not fix "invalid" findings**, but write plainly in the report **why you didn't**, with the counter-evidence attached — that both closes the loop and keeps the same question from being raised again next time.
+- **Pre-existing errors**: if one happens to sit in a place you are editing, fix it while you are there; if it doesn't, log it as a carry-over item — **don't let it pass silently**. **Do not widen the scope while fixing** (rewriting the parser on the side, adding a mechanism on the side) — suggestions that widen scope like this often get overturned in adjudication.
+
+### Re-review the fixes, and when you may stop
+
+Send **everything fixed this round** to review as a new batch: **send only this round's delta, never the whole object**. How you produce the delta depends on where the object lives — **first** compare last round's frozen copy against the current object item by item (this works with or without version control). If version control is in use and the baseline you hold genuinely represents what was frozen last round, you may also use `git diff <baseline>` (it compares the working tree, covering committed, staged, and unstaged parts; run `git add -N` for new files first, see §5 item 4). Either way, make sure the adjudicator can see the delta. Every other step is exactly as before.
+
+**You may stop when a re-review round comes back with "0 valid" and "0 partially valid"** (anything judged "partially valid" has to be fixed, using the narrowed-down version, before it counts as done).
+
+**Do not** substitute "the tests pass" or "the grep returns nothing" for this step — that is one check at closing time, and it is not an adversarial review. An adjudication **can overturn a previous round's verdict** (when new evidence turns up); **the new evidence wins**, and the report has to say plainly what was overturned.
+
+## 9. Questions that need the user to decide
+
+Reviews always turn up questions where "there isn't enough evidence, and both approaches sound reasonable". Ultimately a human has to settle these — but **asking a human spends their attention, so you first have to prove that this really is something only a human can settle**. The default is "work it out myself, then act on the basis I found" — not "go ask the user".
+
+**Before asking, three steps have to be finished**: ① **everything that can be checked has been checked** (anything you could settle by reading a file, looking something up, running it once, or digging through history — you are not allowed to ask); ② **look for an existing basis first** (a specification, a higher-level document, a precedent for the same kind of question — if the answer is already settled, follow it and say in the report where the basis is, and don't ask); ③ **dispatch one agent to check independently and confirm that it really cannot be settled** (if the checker can produce a basis, act on that basis). When you cannot dispatch anyone, use the second pass of the two-pass method for this step, and say plainly that it is not an independent-context check.
+
+**All four of these have to hold before something can go to a human**: ① everything checkable genuinely has been checked; ② there genuinely is **no** basis to cite in the specifications and precedents (you listed them one by one and none apply — not that you didn't go looking); ③ the options genuinely **lead to different outcomes** (it changes behaviour, a contract, an external commitment, or whether you can back out — wording, formatting, and naming preferences don't count); ④ the outcome is **irreversible, or reaches beyond the scope of this change**. If only the first two hold, that is a "can't settle it yet, but can proceed on convention" — write the basis and the impact in the report and move on.
+
+**When you do hand something to a human, give it enough information**: ask everything at once, don't ask one question at a time. Each item carries six things — **the question** (one sentence, specific enough to point at a location or a behaviour), **what you already checked** (what you looked at and what came back), **the options** (2–3, each with its consequences and costs spelled out), **your recommendation** (which one and why), **the default** (which way this round proceeds if the user doesn't answer), **how to answer** (something the user can reply to in a sentence, like "go with A" — not an essay question).
+
+**Don't stop just because there is something to ask**: fix everything else that survived and run the re-review as usual, keep a note of the items that need a decision, and hand them over together at the end. If a decision item is blocking later work, write it explicitly as "blocked here + what it blocks".
+
+## 10. Closing out and reporting
+
+There is one rule: **for every place that went through adjudication and has now been fixed, redo the check that first established it, and paste the raw output; then list everything this round touched and confirm that only the expected things were touched.** How you redo it depends on how it was first decided: if it was decided by running a command, re-run the command and paste the output — commands of the same kind can be combined into one script and run together in one go; if it was decided by comparing what you read (for example "these two contradict each other"), put those two locations and texts side by side again. Anything you claim — "this has no impact", "everything is covered" — has to come with evidence. Saying it is not enough.
+
+Example (the only one here; replace the whole block with whatever suits your own object — **if any command in it fails, or the pattern is not valid, that must never be printed as a zero-hit result**):
 
 ```bash
-# 旧词零残留（把允许的例外显式排除，不要一把 grep 清零）
-grep -rnE "<旧词1>|<旧词2>|..." <被审目录> | grep -vE "<允许的例外>" || echo "（零残留）"
-# 同义串多处必须逐字一致（同一取值域、同一表头在多文件必须字节相同）
-grep -rn "<值域行>" <被审目录> | sed 's/.*：\s*//' | sort | uniq -c
-# 最终改动面
-git diff --stat | tail -3
-git status --porcelain   # 确认只动了预期文件
+grep -rnE "<pattern-1>|<pattern-2>" <object-dir> | grep -vE "<allowed-exceptions>"; st=("${PIPESTATUS[@]}")
+rc="${st[0]}"; [ "${st[1]:-0}" -ge 2 ] && rc="${st[1]}"
+if [ "$rc" -eq 1 ]; then echo "(zero hits)"; elif [ "$rc" -ge 2 ]; then echo "(check command failed rc=$rc — not a zero-hit result)" >&2; exit "$rc"; fi
 ```
 
-- 若仓里有全量测试，**每轮收尾跑一次**；没有则以上 grep 回归为准。
-- 若宣称「代码零影响」，用 grep **证明**而非断言。
-- 新词 / 枚举 / 列名 / 计数在全部出现处**逐字一致**。
-- 收敛后按仓库自身风格提交（若该仓约定为单行中文 conventional commit、无 body，则照此）。
+**How long a reply may be**: any dispatched executor's reply is capped at 20 lines of **body text**. (Not counted against the 20: one line per row of the findings table; the full block for each adjudicated finding — verdict / evidence / boundary / minimal fix (including multi-line `old→new`) / counter-evidence — give all of them if there are many; items needing a user decision written out in full per the six parts of §9, with no limit on how many and all asked at once; the raw output of the closing check, which goes only in the final report.) What you are compressing is the concluding prose, not the things that have to come back. If the body genuinely cannot be compressed, write the process to disk and return only the conclusion and the path. **The report has to contain**: how many findings there were in total and how the verdicts break down; a row-by-row list `# | Finding | Verdict | Disposition` (with the reason / counter-evidence for anything invalid); if there were several rounds, a per-round summary `Round | Blocks | After dedupe | Adjudications | Verdict spread | Fixes`; the convergence path plus the final closing evidence; the raw output of the closing check; and carry-over items and items awaiting a user decision, written out per the six parts of §9.
 
-### 报告模板
+## 11. Self-check before handing off, and pitfalls already hit
 
-- 流程概述：N 条发现 → 判决分布。
-- 逐条表格：`# | 发现 | 判决 | 处置`（附无效项理由 / 反证）。
-- 分轮汇总表（多轮时）：`回合 | 审查分区数 | 去重后发现 | 独立复核次数 | 判决分布 | 修复处数`。
-- 收敛轨迹 + 最终闭环证据。
-- 回归校验命令与原始输出。
-- 改动规模（`git diff --stat`）。
-- 遗留与待用户决策项：按「需要用户决策的问题」一节给全 6 要素（已查证 / 选项 / 建议 / 默认走向），**不写开放式问题**。
+**Check each of these before you finish** (each one has to point at concrete evidence):
 
-### 已知坑（实测）
+- Does every block's task carry the "read-only" hard constraint? Does every one carry the intentional-omissions list?
+- Has every finding been adjudicated? Was the adjudicator someone other than the one who found it?
+- Did the ones needing judgement go out alone? Were the mechanical checks batched (max 4 per group), judged item by item within the group, with no "same as above"?
+- Does the executor type match how hard the task is (mechanical checking to an executor that only checks, judgement to one that is good at it)?
+- If the adjudication half (**including the extra spot-check dispatches**) clearly exceeded "block count × 2", did you go back and check for duplicate findings and for items misclassified as "takes judgement"? When a group came back "all valid, nothing narrowed", is there a spot-check record?
+- Does every "invalid" carry a location and counter-evidence? Does every "partially valid" state the conditions under which it holds, and a narrowed-down fix?
+- Is there a record of the fix-and-re-review rounds? In the round you stopped at, were "valid" and "partially valid" both 0? Did you paste **raw command output** at closing, rather than a line saying "checked and passed"?
+- If an orchestrator ran it, was its reply conclusions only? Does the findings table carry concrete fixes? Did it leave every file alone when it wasn't authorized to edit?
+- Do the items handed to the user carry "what was checked + the consequences of each option + my recommendation"? When nobody could be dispatched, does the report say plainly that "the two-pass method was used, with no independent-context adjudication"?
 
-**流程类**
+**Pitfalls already hit**: running the whole process yourself as the lead agent drowns your context in N subagents' output (which is why it defaults to an orchestrator);
+putting a role whose dispatchable types are pinned down in charge of orchestrating means it can't dispatch anyone; having subagents dispatch further subagents trips the nesting-depth limit and fails; folding items that need judgement into a batch to save tokens buys the overhead back at the price of correctness; writing only "fixed" in the report without saying why it was judged that way means the same question comes back next time. The three commonest ways to miss an edit are: **the same phrasing changed in N−1 places** (go through every place it appears, including elided forms and variants — don't search literally), **the same concept drifting under several names** (settle on what most people at that level write, or on the project's existing authoritative source), and **peripheral files left out** (scripts, fallback manuals, and tables of counter-examples sit outside the main edit area and have to be listed separately and changed along with everything else).
 
-- **主执行者自己跑全流程 → 上下文被 N×（N = 分区数 + 复核数）子代理输出淹没**：这正是「流程很重」的根因。默认下沉（一个编排者跑完整轮，只回结论）。
-- **拿可派类型被限死的强判断角色当编排者** → 它只能派轻量读型，分区审查 / 复核都派不出来。编排者用泛型角色。
-- **要求嵌套的子代理再派下级** → 触发嵌套深度上限，到达上限的子代理已被剥离派工工具，指令无效。
-- **为了省 token 把「需要判断力」的项也塞进合组** → 省了固定开销、赔上正确性，得不偿失。
-- **报告里只写「已修复」而不给判决依据** → 下次同一问题会被重新提出。
+## Appendix
 
-**漏改形态类**
+The three files below are **reference documents in `references/`, to be opened when needed** — the main flow does not depend on your reading them first:
 
-- **「同型句只改了 N−1 处」是最高频的漏改形态**（「同一句多处」是本类第一大漏改形态）：每次改一句，都要 grep 同型句**全部**出现处，**含省略 / 变体写法与不同前缀**（`只留痕` vs `只做留痕`；`Note over X:` / `X->>Y:` 会掩盖同句）。
-- **清尾 grep 要按「概念」而非「词形」枚举变体**：用「只做留痕」搜不到省略式的「只留痕」；「水位」改完后要另搜「覆盖边界 / 覆盖内」。漏变体 = 上一轮清尾净不了。
-- **「同一概念多名」**（如 `水位覆盖` vs `前置校验覆盖`）会跨文件漂移：以「同一层内多数派」或「注册表（术语表 / 规格书）已声明的名字」为准统一，并注明两层分工。
-- **附属文件最容易被漏**（脚本、兜底手册、反面教材表）——它们通常不在主要 hunk 内，必须专门点名同步。
-- 被审对象是文档时：把「摘要位 / 速查位 / ASCII 图」等**派生物**与「正文权威」分开判定——派生物漏同步可能已被裁定为非必改，先查有无既有保留项，避免重复劳动。
-
-### 验证判据（本流程自身是否跑对）
-
-- 每个分区任务都明确含「只读」硬约束与「有意保留项」清单。
-- 每条发现都有复核，且复核者**不是发现者**；需独立判断的项单派，机械项可合组（≤4 条/组）但组内逐条独立判决、无「同上」。
-- 单开项能说出「为什么它需要独立判断 / 代价高 / 是争议项」；合组项都是机械核对类，且每组 ≤4 条、任务正文含「逐条独立结论 + 不得受他项影响 + 禁同上」。
-- 复核子代理数未超「分区数 × 2」；出现过「某组全部有效且无收窄」时，有抽检记录。
-- 单开 / 合组各自用的执行者类型与任务性质匹配：机械核对 → 轻量读型，需判断力 → 重读型。
-- 每条「无效」判决都有 `file:line` + 原文反证；每条「部分有效」都写明了限定条件与收窄后的改法。
-- 存在「修后审查」轮次记录，且终止轮的有效发现数与部分有效数均为 0。
-- 下沉模式下：最终答复只含结论（无发现者 / 复核者原始输出），且发现表带 `old→new`；未授权时未改任何文件。
-- 上交用户的每条决策项都带「已查证 + 选项后果 + 我的建议」；抽查 1–2 条，确认「能取证 / 有先例 / 仅措辞偏好」的问题**没有**被推给用户。
-- 回归校验给出的是**原始命令输出**，而非「已检查通过」的断言；`git status --porcelain` 只有一个预期文件集。
-- 无派工能力时：报告写明「两遍法，无独立上下文复核」，且第一遍清单已落盘。
-
-## 附录
-
-- [`harness-probe.md`](./harness-probe.md) —— 开场五问：你这台机器能派工 / 能嵌套 / 能并行派几个
-- [`orchestration.md`](./orchestration.md) —— 模式 A / 模式 B / 两遍法，含可抄的派工提示词模板
-- [`review-of-documents.md`](./review-of-documents.md) —— 被审对象是没有 diff 的已发布文档时
-- [`prompts.md`](./prompts.md) —— omp 与 Claude Code 的实测 harness 能力参数、模型分档陷阱、可直接落盘的三个 agent 定义
+- [`references/harness-probe.md`](./references/harness-probe.md) — the opening five questions: can this machine dispatch / nest / run several in parallel
+- [`references/orchestration.md`](./references/orchestration.md) — the two orchestration modes, the two-pass fallback when you cannot dispatch, and the orchestrator dispatch prompt template
+- [`references/harness-measurements.md`](./references/harness-measurements.md) — measured capability numbers and model-tier pitfalls from two harnesses, as **a reference point for calibrating your own probe**: these are someone else's measurements, not your answers

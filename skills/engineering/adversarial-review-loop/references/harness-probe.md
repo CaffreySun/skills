@@ -1,20 +1,23 @@
-# 附录：先定位 harness（执行前 10 秒）
+# Appendix: Locate Your Harness First (10 Seconds Before You Start)
 
-> 展开 [`SKILL.md`](./SKILL.md) 开场那张表。只在需要决定这一轮怎么编排时读。
+> Read the five-question table below only when you need to decide how to orchestrate this round.
 
-只看**你自己的工具清单**，回答下面 5 个问题，就能定位该走哪一档。
+Answer the 5 questions below against **your own tool list alone**, and you can see which tier to take.
 
-**流程与纪律不因 harness 而变**——变的只有「谁派、产物怎么回收」。两档编排模式见 [`orchestration.md`](./orchestration.md)；两套实测实现（omp / Claude Code）见 [`prompts.md`](./prompts.md)。
+**The process and the discipline do not change with the harness** — only "who dispatches, and how the artifacts come back" changes. For the two
+orchestration modes see [`orchestration.md`](./orchestration.md); for measured values on someone else's machine (to compare against your answers to
+these five questions) see [`harness-measurements.md`](./harness-measurements.md).
 
-| 能力 | 怎么自查 | 有它时的做法 | 没有时的下限做法 |
+| Capability | How to check it yourself | What to do when you have it | Fallback when you don't have it |
 |---|---|---|---|
-| ① 能派独立上下文的子代理 | 工具清单里有没有「派工 / 派任务」类工具——能把一段任务交给**另一个独立上下文**执行、再把结果拿回来 | 全流程按 SKILL.md §6 分区派工，每个分区一个互不重叠的独立上下文 | 走 [`orchestration.md`](./orchestration.md)「两遍法」降级：同一执行者分两遍坐，第一遍只发现、第二遍只判决，中间必须换上下文 |
-| ② 子代理能再派（嵌套） | 子代理可用工具里是否同样含「派工」类工具；或有配置项写明最大嵌套深度 | 走 [`orchestration.md`](./orchestration.md) 模式 A（编排者模式）：主执行者只派 1 个编排者，只收结论 | 走 [`orchestration.md`](./orchestration.md) 模式 B（主执行者亲自编排）：分区与复核都由主执行者发 |
-| ③ 能一次并行派 N 个 | 派工工具的入参是否为数组（一次调用可带多条任务） | 一轮里的所有分区 / 所有复核**一次批量发出**，不串行 | 逐个发，但「先全部发完、再统一收」，别「发一个等一个」 |
-| ④ 子代理产物能按需回读 | 有没有事后取某个子代理完整产物的手段（产物地址 / transcript / 落盘文件） | 默认不读；只在核对某一条判决时才回读那一条 | 派工时就要它把长产物**写到派工对象读得到的目录**（多数 harness 的子代理只读工作区内 → 取工作区内的临时目录，见 §5「落盘位置」），只回 ≤20 行结论 + 路径 |
-| ⑤ 能强制只读 + 按模型分档 | 能不能给子代理设工具白名单 / 黑名单；能不能指定它跑哪个模型，**且别名真的映射到不同模型** | 只读由配置强制；机械核对挂便宜模型、需判断力挂强模型（SKILL.md §6「选型」） | 只读写进任务正文当硬约束（靠纪律不靠机制）；模型分档用「任务难易 + 工具白名单 + 更窄的任务」代替（[`prompts.md`](./prompts.md) 给了核实办法） |
+| ① Can dispatch subagents with independent contexts | Does the tool list have a "dispatch / assign task" kind of tool — one that can hand a piece of work to **another independent context** and bring the result back | Partition the work and dispatch people per SKILL.md §7, one non-overlapping independent context per block | Switch to the two-pass method in [`orchestration.md`](./orchestration.md): the same person works in two passes, the first pass only finds problems and the second only adjudicates them, and the context must be swapped once in between |
+| ② Subagents can dispatch further (nesting) | Do the subagents' own tools also include a "dispatch" kind of tool; or is there a configuration option that states the maximum nesting depth | Take [`orchestration.md`](./orchestration.md) mode A (orchestrator mode): the lead agent dispatches just 1 orchestrator and receives conclusions only | Take [`orchestration.md`](./orchestration.md) mode B (the lead agent orchestrates itself): the lead agent issues both the partitions and the adjudications itself |
+| ③ Can dispatch several in parallel at once | Is the dispatch tool's input an array (one call can carry several tasks) | Send every partition task and every adjudication of a round **all at once**, not one after another | You can only send them one at a time, but still "send them all first, then collect them together" — never "send one, wait for one" |
+| ④ Subagent artifacts can be read back on demand | Afterwards, is there a way to retrieve a subagent's full artifact (artifact address / conversation record / file written to disk) | By default do not read it; only when you need to check one particular verdict do you read back that one | At dispatch time require it to write long artifacts **to a directory the subagent can read** (on most harnesses a subagent can only read inside the working tree → use a temporary directory inside the working tree, see SKILL.md §5), and to reply with conclusions only (for length see SKILL.md §10) + the artifact path |
+| ⑤ Can enforce read-only + tier by model | Can you give a subagent a tool allowlist / denylist; can you specify which model it runs on, **and do the aliases really map to different models** | Read-only is enforced by configuration; attach the cheap model to mechanical checks and the strong model to work that needs judgement (see SKILL.md §7) | Read-only can only be written into the task body as a hard constraint (relying on discipline, not on mechanism); for tiering, switch to "task difficulty + tool allowlist + narrowing the task" ([`harness-measurements.md`](./harness-measurements.md) gives a way to verify) |
 
-- ①②③④⑤ 全有 → 模式 A（最省主上下文成本）。
-- 有 ①③④⑤、无 ② → 模式 B。
-- 只有 ①（或无 ③）→ 模式 B，并把分区数取下限（1–2）。
-- ① 也没有 → 两遍法；**不得**把「同一上下文里自问自答」当成独立复核（见 [`orchestration.md`](./orchestration.md)）。
+- All five present → mode A (spends the least lead-agent context).
+- Have ①②③ but lack ④ or ⑤ → still mode A; handle it per the "fallback when you don't have it" row for ④/⑤ (artifacts land in a directory the subagent can read and it returns the path; read-only rests on the task body).
+- Lack ② → mode B (and if ④/⑤ are also missing, likewise follow the fallback rows).
+- Have ①② but not ③ → mode B, with the block count taken from the lower bound of the corresponding tier in §6.
+- Not even ① → use the two-pass method; **never** treat "asking and answering yourself inside one context" as independent adjudication (see [`orchestration.md`](./orchestration.md)).
