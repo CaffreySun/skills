@@ -1,101 +1,125 @@
-# task-spec: 为什么是这样设计的
+# task-spec: why it is built this way
 
-> 这篇是给**人**读的。[`SKILL.md`](../../skills/engineering/task-spec/SKILL.md) 是给 AI
-> 的指令集。想知道「为什么有这五个阶段」读这篇；要用这个技能直接用 SKILL.md。
+[中文版](./task-spec.zh.md) | English
 
-## 起点：模型有两个洞
+> This one is for **humans**. [`SKILL.md`](../../skills/engineering/task-spec/SKILL.md) is the
+> instruction set for the AI. Read this if you want to know why there are these five phases;
+> if you want to use the skill, go straight to SKILL.md.
 
-一个 LLM 逐个 token 生成文本，每次挑统计上最可能的下一个词。这个机制带来四个后果：
+## Starting point: the model has two holes
 
-1. **默认就是第一个念头。** 概率最高的续写就是第一个「想法」，然后它就照着跑。不会
-   自然地去想别的可能，也不会问「这是不是真正的问题」。
-2. **没有质量梯度。** 它朝「最可能」走，不朝「更好」走。它分不出哪个方向更深。
-3. **分不清「看起来对」和「真的对」。** 一个看起来合理的错答案和一个正确答案，在统计
-   形状上是同一个东西。
-4. **不检查自己的工作。** 「做完了」等于「做好了」。没有外力逼它，它不会去抓矛盾、
-   漏项。
+An LLM generates text one token at a time, each time picking the statistically most likely
+next word. That mechanism produces four consequences:
 
-前两条发生在**行动之前**，后两条发生在**行动之后**。这两类问题的性质不同，修法也
-不同。
+1. **The default is the first idea.** The highest-probability continuation is the first
+   "thought," and the model runs with it. It does not naturally consider other possibilities,
+   and it does not ask "is this even the right problem?"
+2. **There is no quality gradient.** It moves toward "most likely," not toward "better." It
+   cannot tell which direction goes deeper.
+3. **It cannot tell "looks right" from "is right."** A plausible wrong answer and a correct
+   answer have the same statistical shape.
+4. **It does not check its own work.** "Done" equals "done well." Without an outside force
+   pushing it, it will not catch contradictions or missed items.
 
-## 两类问题需要两种策略
+The first two happen **before acting**; the last two happen **after acting**. The two kinds of
+problem differ in nature, and they need different fixes.
 
-**验证**是容易的那个。「产出是否符合规格？」是个客观问题，可以从外部强制：一份契
-约、一份清单、一组证据就够了。
+## Two kinds of problem need two strategies
 
-**思考**是难的那个。「方向对不对？」「够不够好？」这些需要模型没有的东西：一个指向
-「更好」的内在罗盘。模型指向「最可能」，永远指向不了「更好」。它不是因为懒才草率收
-场，而是因为它分辨不出哪个方向更深。
+**Verification** is the easy half. "Does the output match the spec?" is an objective question,
+so it can be enforced from outside: a contract, a checklist, a set of evidence is enough.
 
-人类的对应物是**态度**。一个真的想把事情做好的人，自然会去探索替代方案、质疑前提、
-预判风险。模型没有等价物。它没法「想要」任何东西。
+**Thinking** is the hard half. "Is the direction right?" "Is it good enough?" These need
+something the model does not have: an internal compass pointing at "better." The model points
+at "most likely" and can never point at "better." It does not end shallow because it is lazy;
+it ends shallow because it cannot tell which direction goes deeper.
 
-所以：**验证能用契约强制，思考只能用结构推。**
+The human counterpart is **attitude**. A person who genuinely wants to do the work well
+naturally explores alternatives, questions assumptions, and anticipates risks. The model has
+no equivalent. It cannot "want" anything.
 
-## 五个阶段各自的由来
+So: **verification can be enforced by contract; thinking can only be pushed by structure.**
 
-| 阶段 | 它在补哪个洞 | 不做会怎样 |
+## Where each of the five phases comes from
+
+| Phase | Which hole it fills | What happens without it |
 |---|---|---|
-| **探索** | 洞 1、2 | 抓住第一个念头就跑，从没考虑过别条路 |
-| **定规** | — | 没有可对照的基准，「做好了」无从判断 |
-| **挑战** | 洞 1、2 | 第一个方案直接进执行，缺陷在产出里才暴露 |
-| **执行** | — | 没有「离开轨迹」这个概念，边做边漂移无从发现 |
-| **审查** | 洞 3、4 | 「跑通了」就算完成，实际上没达标的部分被留下 |
+| **Explore** | holes 1, 2 | It grabs the first idea and runs, never having considered another path |
+| **Spec** | — | There is no baseline to check against, so "done well" cannot be judged |
+| **Challenge** | holes 1, 2 | The first plan goes straight into Execute, and its defects only surface in the output |
+| **Execute** | — | There is no notion of "leaving the track," so drift while working cannot be noticed |
+| **Verify** | holes 3, 4 | "It runs" counts as complete, and the parts that actually fall short are left in place |
 
-## 为什么是「两层循环」而不是一条直线
+## Why two loops instead of a straight line
 
-单次通过的流程无法纠错。两个阶段的配置成环，让问题能在**代价最低的时候**被抓到：
+A single pass cannot correct itself. Pairing the phases into loops lets problems be caught
+**when they cost the least**:
 
-- **内循环**（探索 → 定规 → 挑战）在动手前打磨方案。轻微缺陷退回定规，重大缺陷退回
-  探索。改一段文字的成本远低于改已经写进产出的东西。
-- **外循环**（执行 → 审查 → 探索）在动手后验证结果。审查不通过不是「打个补丁」，
-  是回到探索重启一轮——因为审查失败通常意味着原先的理解就不够，而不是最后一步
-  歪了。
+- **Inner loop** (Explore → Spec → Challenge) sharpens the plan before acting. A minor defect
+  goes back to Spec; a major defect goes back to Explore. Rewriting a piece of text costs far
+  less than rewriting something already baked into the output.
+- **Outer loop** (Execute → Verify → Explore) validates the result after acting. A failed
+  verification is not "apply a patch" — it is going back to Explore and restarting a cycle,
+  because a failed verification usually means the original understanding was insufficient,
+  not that the last step went crooked.
 
-每一层循环都在缩小问题，同时累积一条可查的记录。
+Each loop narrows the problem, and at the same time accumulates an auditable record.
 
-## 为什么 spec 必须是「契约束缚」而不是「参考方案」
+## Why the spec must be a binding contract, not a reference plan
 
-这是整个设计里最容易被误解的一点。
+This is the most easily misunderstood point in the whole design.
 
-如果 spec 只是一份参考计划，那么：
+If the spec were only a reference plan, then:
 
-- 执行阶段可以「顺便」做点 plan 上没有的事 —— 范围就此悄悄膨胀；
-- 审查阶段可以拿「感觉差不多」当通过 —— 洞 3 原样复发；
-- 「不在 spec 里」失去意义，scope 不再是能画线的地方。
+- the Execute phase could "while you're at it" do things the plan does not contain — and the
+  scope would quietly expand;
+- the Verify phase could pass something on "it feels about right" — and hole 3 would come back
+  exactly as before;
+- "not in the spec" would lose its meaning, and scope would no longer be a place where you can
+  draw a line.
 
-所以 task-spec 明确规定：**spec 是不可偏离的契约**。执行只能做 spec 里写了的，审查
-只能对照 spec 里写明的验收标准判 PASS/FAIL。spec 里没有的 = 不在本次范围内。
+So task-spec states it outright: **the spec is a binding contract that may not be deviated
+from.** Execute may only do what the spec says; Verify may only judge PASS/FAIL against the
+acceptance criteria the spec states. Anything not in the spec = outside this task's scope.
 
-这不是形式主义。它是让「从这个草率的执行中把它拽回来」这件事在机制上成为可能。
+This is not formalism. It is what makes it mechanically possible to pull something back from
+a careless execution.
 
-## 为什么每层之间必须「让出一轮」
+## Why every phase must yield a turn
 
-每个阶段结尾都有：
+Every phase ends with:
 
 ```
 To yield, run: bash -c 'sleep 0.1'
 ```
 
-看起来很怪，但它解决一个具体问题：模型在一次回答里连续生成时，后面阶段的决策会被
-前面阶段的措辞**已经在上下文里**这一事实锚定。挑战阶段最容易受影响——它读到的是自己
-刚写的 spec，天然倾向于给它放行。
+It looks odd, but it solves a concrete problem: when the model generates one response
+continuously, the earlier phases' wording is **already in the context**, and that anchors what
+the later phases decide. The Challenge phase is the most easily affected — what
+it reads is the spec it has just written itself, and it naturally tends to wave that spec
+through.
 
-`sleep` 命令制造一个真实的轮次边界。下一阶段的 token 生成发生在新的上下文状态下，
-而不是顺着上一段的输出滑下去。机制很土，效果实在。
+The `sleep` command creates a real turn boundary. The next phase's token generation happens
+under a new context state, instead of sliding on from the previous passage's output. The
+mechanism is crude; the effect is real.
 
-## 为什么「挑战」要交给子代理
+## Why Challenge is delegated to a subagent
 
-自己审自己的东西，最可能的结果是放过它——洞 3 说的就是这个。
+Reviewing your own work most likely ends with letting it pass — that is what hole 3 is about.
 
-交给一个独立上下文的子代理，因为它没有「这是我想出来的」这个先验。同一个模型，换一
-个没有既得利益的上下文，攻击性明显不同。
+Give it to a subagent in a separate context, because it does not carry the prior of "this is
+what I came up with." The same model, moved into a context with no vested interest, attacks
+noticeably differently.
 
-## 局限（诚实版）
+## Limitations (honest version)
 
-- **这只是补偿，不是让模型变好。** 它不能阻止模型默认走第一个念头，它只是让模型**绕
-  不过**本该自己走的那些步骤。
-- **不是万能的。** 它无法替代模型真正的判断力。spec 写得再细，也救不了错误的领域理解。
-- **流程本身不产出质量。** 五个阶段全部走完、但每个阶段都在敷衍，结果依然是烂的。
-  这条也一样适用于人做审查。
-- **开销是真的。** 小任务跳阶段（各阶段都有「琐碎任务」豁免），但非平凡任务不能省。
+- **This is only compensation; it does not make the model better.** It cannot stop the model
+  from defaulting to the first idea, it only makes the model **unable to bypass** the steps it
+  should have taken on its own.
+- **It is not a cure-all.** It cannot replace the model's real judgement. However detailed the
+  spec is, it cannot rescue a wrong understanding of the domain.
+- **The process itself does not produce quality.** Run all five phases while shortchanging
+  every one of them, and the result is still bad. This applies just the same to a human doing
+  the review.
+- **The overhead is real.** Small tasks skip phases (every phase has a "trivial task"
+  exemption), but non-trivial tasks cannot skip them.

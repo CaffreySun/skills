@@ -1,123 +1,154 @@
-# adversarial-review-loop: 为什么是这样设计的
+# adversarial-review-loop: why it is built this way
 
-> 这篇是给**人**读的。[`SKILL.md`](../../skills/engineering/adversarial-review-loop/SKILL.md)
-> 是给 AI 读的指令集。想知道「为什么这套流程长这样」读这篇；要用这个技能直接用
-> SKILL.md。
+[中文版](./adversarial-review-loop.zh.md) | English
 
-## 一条纪律，其余都是它的推论
+> This one is for **humans**. [`SKILL.md`](../../skills/engineering/adversarial-review-loop/SKILL.md)
+> is the instruction set for the AI. Read this if you want to know why the loop looks the
+> way it does; if you want to use the skill, go straight to SKILL.md.
 
-**发现问题的人和判断问题是否成立的人，不能是同一个。**
+## One discipline, and everything else follows from it
 
-流程里所有看起来繁琐的设计——分区、去重、逐条复核、修后再审——都是从这一条推出来的。
-如果只能记住一件事，记这条。
+**The context that finds a problem must never be the context that decides whether it is real.**
 
-为什么这一条这么关键？因为一个上下文里连续做两件事时，第二件必然被第一件锚定。刚
-发现「这里有问题」的上下文，再被问「这个问题成立吗」，几乎不可能给出诚实的否定——它
-刚投入了力气找到它。这不是恶意，是上下文的必然。
+Every part of the loop that looks fussy — partitioning, dedupe, item-by-item adjudication,
+re-reviewing the fixes — falls out of that one sentence. If you remember one thing, remember this.
 
-## 三个数字决定了流程的形状
+Why is it so load-bearing? Because when one context does two things in a row, the second is
+anchored by the first. A context that has just found "there is a problem here" is almost
+incapable of honestly rejecting it when asked "does this problem hold?" — it has just spent the
+effort finding it. That is not bad faith; it is what a context does.
 
-这三个数字都来自实际跑过的项目，不是推理出来的。流程之所以是现在这个样子，是为了
-对上这三个数字。
+## Three numbers fix the shape of the loop
 
-### 数字一：51 处修复里，16 处是修复自己引入的
+All three come from projects that actually ran, not from reasoning. The loop looks the way it
+does in order to answer them.
 
-> 某项目，51 处修复中有 **16 处**是「修复自身引入的新问题」或「改了一处漏了另一
-> 处」。
+### Number one: 16 of 51 fixes were introduced by the fixing
 
-这是**必须修后再审**的唯一理由。只审原始改动、修完就收工，这 16 处会全部留在工作区
-里。更糟的是它们看起来完全正常——因为没有人再看过一遍。
+> In one project, **16 of 51 fixes** were either "fixed it and introduced a new problem" or
+> "changed one place and missed another".
 
-所以流程的终止判据不是「修完了」，而是**某一轮修后审查得到 0 条有效发现 + 0 条部分
-有效**。
+This is the **only** reason every round of fixes has to be reviewed again. Review the original
+change, fix everything the review turned up, stop — and all 16 stay in the working tree. Worse,
+they look perfectly normal, because nobody has looked a second time.
 
-### 数字二：14 条发现里，8 条被推翻或降级
+So the stopping condition is not "the fixes are done". It is **a round of re-review that returns
+0 valid findings and 0 partially valid findings**.
 
-> 某 11 文件规范重构，5 个分区发现者 → 14 条发现 → 14 个独立复核者 → 1 条判无效、
-> 7 条降为「部分有效」。
+### Number two: 8 of 14 findings were overturned or downgraded
 
-约 **1/5 ~ 1/3** 的发现会被判无效或降级。这是**复核这一步不能跳**的理由。
+> In one 11-file specification rewrite: 5 partitioned finders → 14 findings → 14 independent
+> adjudicators → 1 ruled invalid, 7 downgraded to "partially valid".
 
-如果跳过复核直接照单全修，这 8 条会变成 8 处无谓的改动——其中一部分还会引入数字一
-那类新问题。复核省下的不是审查时间，是**无效改动**。
+Roughly **1 in 5 to 1 in 3** findings ends up invalid or downgraded. This is the reason the
+adjudication step cannot be skipped.
 
-### 数字三：收敛轨迹 8 → 3 → 3 → 2 → 0
+Fix everything on the list without adjudicating, and those 8 become 8 pointless edits — some of
+which introduce new problems of the number-one kind. What adjudication saves is not review time;
+it is **pointless edits**.
 
-> 某 24 文件规范 + 代码改动，各轮修后审查在**上一轮修复里**又找出的新问题数：
-> **8 → 3 → 3 → 2 → 0**。
+### Number three: the convergence path 8 → 3 → 3 → 2 → 0
 
-两个信息：
+> In one 24-file specification-plus-code change, the number of new problems each round of
+> re-review found **inside the previous round's fixes**: **8 → 3 → 3 → 2 → 0**.
 
-1. **它会收敛。** 不是无限循环，四轮到零。这回答了「流程太重怎么办」——重是有界的。
-2. **最有价值的发现不是清单式核对找到的。** 某个项目里最重的两条设计缺陷（漏了一条既有路径、
-   某个终态可以绕过校验），都来自复核者的**主动探针**——「这条改动漏了哪条既有路径？」
-   而不是「这行字写对了吗？」。
+Two things follow:
 
-第二条是为什么流程里反复强调「专探漏了哪条既有路径」，而不是给一张检查表照着打勾。
+1. **It converges.** Not an endless loop — four rounds to zero. That answers "isn't this too
+   heavy?": it is heavy, and it is bounded.
+2. **The most valuable findings are not the ones a checklist turns up.** The two heaviest design
+   defects in one project (an existing path the edit failed to update, a terminal state that could bypass
+   validation) both came from an adjudicator's **active probe** — "which existing path does this
+   edit fail to cover?" rather than "is this line written correctly?".
 
-## 为什么默认「整轮下沉」给一个子代理
+That second point is why the loop keeps insisting on "go looking for the path that should have
+changed alongside this one", rather than handing out a checklist to tick through.
 
-主执行者自己跑全流程时，每个发现者、每个复核者的输出都会进主上下文，而且按轮数累
-积。这就是「流程很重」这个抱怨的真正来源——不是子代理多，是**输出全堆在主上下文
-里**。
+## Why the round is handed to a single subagent by default
 
-下沉之后：主执行者只付「1 次派工 + 最终结论」，所有过程留在编排者自己的上下文里。
+If the lead agent runs the whole loop itself, the output of every finder and every adjudicator
+lands in the lead context and piles up round after round. That is where the complaint "this
+process is too heavy" actually comes from — not from the number of subagents, but from **all
+their output landing in the main context**.
 
-代价是失去了「对发现是否被夸大」的直接手感。补偿手段是硬性要求结论里必须带
-`old→new`——看到具体改法，主执行者一眼就能判断是否夸大，不必重新取证。
+Hand it over, and the lead agent pays only "one dispatch + one final set of conclusions"; everything
+else stays in the orchestrator's own context.
 
-## 为什么「合组」是安全的（以及它的边界）
+The cost is losing your direct feel for whether a finding has been overstated. The compensation
+is a hard rule: every conclusion must spell out the concrete `old→new` edit. Shown the
+specific change, the lead agent can tell at a glance whether the finding was inflated,
+without going back to re-gather the evidence.
 
-每个子代理都有一份**与任务内容无关的固定开销**：系统提示 + 工具定义 + skill 列表，
-量级数千 token。N 个子代理的成本 ≈ N × 固定开销 + 总正文。
+## Why batching is safe (and where the boundary is)
 
-所以「一条发现一个子代理」是最贵的形态。15 条发现全单派 = 15 份固定开销，而其中真
-正需要独立判断的往往只有 3–5 条。
+Every subagent carries a **fixed overhead that has nothing to do with the task**: system prompt,
+tool definitions, skill list — on the order of several thousand tokens. N subagents cost roughly
+N × that fixed overhead, plus all the content.
 
-**合组省掉的正是固定开销。** 但合组有前提：只合**机械核对**类——「某行是否真这样写」
-「某词是否还有残留」这类判决不依赖语义判断。
+So "one subagent per finding" is the most expensive shape there is. Fifteen findings dispatched
+separately means fifteen fixed overheads, when only 3–5 of them usually need independent
+judgement.
 
-三轴判据（任一为「是」就单开）：
+**Batching is what saves that overhead.** But batching has a precondition: only batch the
+**mechanical checks** — verdicts like "is this line really written that way" and "does this word
+still appear anywhere", which do not depend on semantic judgement.
 
-| 轴 | 问什么 |
+The three-axis test (any "yes" means dispatch it on its own):
+
+| Axis | What it asks |
 |---|---|
-| **判断力** | 结论依赖语义冲突 / 自洽性 / 真缺口 / 歧义 / 权衡？还是只需机械核对？ |
-| **后果代价** | 结论会改行为、契约、对外承诺、流程语义，或不可逆？ |
-| **争议复检** | 这一项上一轮是不是已经被推翻 / 降级过？ |
+| **Judgement** | Does the verdict depend on a semantic conflict, self-consistency, a real gap, ambiguity, or a trade-off? Or is it enough to check mechanically? |
+| **Cost of getting it wrong** | Would the verdict change behaviour, a contract, an external commitment, or the meaning of a process — or be irreversible? |
+| **Contested ground** | Was this item already overturned or downgraded in a previous round? |
 
-判不准就单开。宁可多花一点，不能放过争议项。
+When you cannot judge, dispatch it on its own. Paying a little more is better than letting a
+contested item through.
 
-合组的硬约束（不写进任务正文，合组就退化成自我污染）：
+The hard rules for batching (leave them out of the task text and batching degrades into
+self-contamination):
 
-1. 组内逐条独立给判决，**禁止「同上」「该类整体有效」**；
-2. 明确要求「不得因组内其他项的判决影响本项」；
-3. 输出顺序固定：**先逐条判决 → 再写组内小结**，不许倒过来；
-4. 组内不含同一处的多条发现（同处先去重）；
-5. 组内条目按文件 / 乱序排，别把同类同结论的挨在一起——顺序会诱导橡皮图章；
-6. **抽检**：某组若返回「全部有效且无一条被收窄」，从该组挑风险最高的一条单独再复核
-   一次。
+1. Every item in the batch gets its own verdict — **"same as above" and "this whole category is
+   valid" are forbidden**;
+2. State explicitly that the verdict on this item must not be influenced by the verdicts on the
+   others in the batch;
+3. Fixed output order: **every verdict first, then the batch summary** — never the reverse;
+4. The batch contains no two findings about the same place (dedupe those first);
+5. Order the items by file, or shuffle them — do not put same-category, same-conclusion items
+   next to each other, because adjacency invites rubber-stamping;
+6. **Spot check**: if a batch comes back saying "all valid and not one narrowed", pick its
+   highest-risk item and send it through adjudication again on its own.
 
-## 为什么求人之前，得先证明「这是真的只能由人来定」
+## Why you have to prove "only a human can settle this" before asking one
 
-「问用户」是有代价的：消耗注意力，打断流程。所以默认动作是**自己查清后按依据执
-行**，不是问。
+Asking the user costs something: their attention, and an interruption to the flow. So the default
+is **work it out and act on the basis you found** — not ask.
 
-上交用户必须同时满足四条：取证已穷尽 / 规范先例里确实没有可援引的裁定（是逐条列过
-都不适用，不是没找）/ 各选项后果实质不同（措辞偏好不算）/ 后果不可逆或影响面超出本
-次改动。
+Something can go to the user only when all four of these hold at once: the evidence-gathering is
+genuinely exhausted / there genuinely is no ruling to cite in the specifications and precedents
+(you listed them one by one and none applies, not that you did not go looking) / the options lead
+to materially different outcomes (wording preferences do not count) / the outcome is irreversible
+or reaches beyond this change.
 
-只满足前两条是「待定、但可按惯例自行推进」。四条全中才是「必须用户决策」。
+Satisfying only the first two is "undecided, but can proceed on convention". All four is "the
+user has to decide".
 
-上交时也不能甩题：每条必须带「已查证 + 2–3 个选项各自的后果 + 我的建议 + 默认走
-向 + 一句话就能答」。
+And you cannot just drop the question on them: each item has to carry "what I checked + the
+consequences of each of the 2–3 options + my recommendation + the default + something they can
+answer in one sentence".
 
-## 局限（诚实版）
+## Limits (the honest version)
 
-- **成本是真的。** 一轮完整流程要派十几个子代理。对象只有一两个可审侧面、或者对错一眼能看出来时，不该上，
-  降档按 §6 的原则而非固定档位。
-- **对没有派工能力的 harness 只是部分补偿。** 「两遍法」（同一执行者分两遍坐）保住了
-  「发现者 ≠ 判者」的形式，但共享先验依然存在，不能宣称等价于独立复核。报告里必须
-  如实标注。
-- **它依赖一份「什么算正确」的标准，而且这份标准要在开审前定下来。** 标准可以是现成的（规范、约定、上级文档），也可以是当场定的；但如果这次改动根本定不出标准，
-  复核者无从取证，流程会退化成主观争论。
-- **它不能让模型变聪明。** 它只是让「不经复核就交付」这件事在机制上更难发生。
+- **It really does cost.** A full round dispatches a dozen-odd subagents. When the object has
+  only one or two reviewable sides, or right and wrong are plain at a glance, do not run it —
+  step down by the principle in section 6 of SKILL.md, not by a fixed tier.
+- **On a harness with no dispatch capability it is only a partial compensation.** The "two-pass
+  method" (one executor, two passes) preserves the *form* of "finder ≠ judge", but the two passes
+  still share priors, so it cannot be claimed as equivalent to independent adjudication. The
+  report has to say so plainly.
+- **It depends on a standard for "what counts as correct", and that standard has to be settled
+  before review starts.** The standard can be ready-made (a specification, a convention, a
+  higher-level document) or set on the spot; but if no standard can be settled for this change at
+  all, the adjudicator has nothing to gather evidence against, and the process degrades into an
+  argument of opinions.
+- **It cannot make the model smarter.** All it does is make "ship it without adjudication"
+  mechanically harder to do.

@@ -81,7 +81,7 @@ spec 是**不可偏离的契约**：执行只能照它做，审查只能拿它�
 性挑战直接进执行。
 
 [读这个技能 →](./skills/engineering/task-spec/SKILL.md)
-· [为什么这样设计 →](./docs/engineering/task-spec.md)
+· [为什么这样设计 →](./docs/engineering/task-spec.zh.md)
 
 ### adversarial-review-loop
 
@@ -95,7 +95,7 @@ spec 是**不可偏离的契约**：执行只能照它做，审查只能拿它�
   轮修复里又找出的新问题数）。
 
 [读这个技能 →](./skills/engineering/adversarial-review-loop/SKILL.md)
-· [为什么这样设计 →](./docs/engineering/adversarial-review-loop.md)
+· [为什么这样设计 →](./docs/engineering/adversarial-review-loop.zh.md)
 
 ## 仓库结构
 
