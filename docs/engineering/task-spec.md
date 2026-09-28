@@ -6,10 +6,10 @@
 > instruction set for the AI. Read this if you want to know why there are these five phases;
 > if you want to use the skill, go straight to SKILL.md.
 
-## Starting point: the model has two holes
+## Starting point: the model has four holes
 
 An LLM generates text one token at a time, each time picking the statistically most likely
-next word. That mechanism produces four consequences:
+next word. That mechanism produces four holes:
 
 1. **The default is the first idea.** The highest-probability continuation is the first
    "thought," and the model runs with it. It does not naturally consider other possibilities,
@@ -84,24 +84,6 @@ acceptance criteria the spec states. Anything not in the spec = outside this tas
 
 This is not formalism. It is what makes it mechanically possible to pull something back from
 a careless execution.
-
-## Why every phase must yield a turn
-
-Every phase ends with:
-
-```
-To yield, run: bash -c 'sleep 0.1'
-```
-
-It looks odd, but it solves a concrete problem: when the model generates one response
-continuously, the earlier phases' wording is **already in the context**, and that anchors what
-the later phases decide. The Challenge phase is the most easily affected — what
-it reads is the spec it has just written itself, and it naturally tends to wave that spec
-through.
-
-The `sleep` command creates a real turn boundary. The next phase's token generation happens
-under a new context state, instead of sliding on from the previous passage's output. The
-mechanism is crude; the effect is real.
 
 ## Why Challenge is delegated to a subagent
 

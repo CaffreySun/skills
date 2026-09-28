@@ -12,28 +12,6 @@ description: >
 > The spec is not a template to fill in. It is the output of a quality-control
 > process. If the process doesn't loop, quality didn't happen.
 
-
-## Why this skill exists
-
-You — the LLM reading this — have a fundamental limitation. You generate tokens
-based on statistical likelihood, not logical necessity. This has consequences:
-
-1. **Your default is the first idea.** The highest-probability continuation is
-   the first "thought," and you run with it. You don't naturally explore
-   alternatives or question whether the problem is even the right problem.
-2. **You have no quality gradient.** You orient toward "most likely," not
-   "better." You can't tell which direction leads to deeper work.
-3. **You can't distinguish "looks right" from "is right."** A plausible wrong
-   answer and a correct answer have the same statistical shape.
-4. **You don't check your work.** "Done" equals "done well." You won't catch
-   contradictions or missed criteria without being forced to.
-
-This skill is the external scaffolding that compensates. It doesn't make you
-better — it makes you **unable to bypass** the thinking and verification you
-would otherwise skip. Every phase, every yield, every adversarial question
-exists because of these four facts.
-
-Read them again before you start any task.
 ## Core contract: the spec binds execution and verification
 
 The spec produced by Explore+Spec+Challenge is not a "reference plan" — it is a
@@ -114,8 +92,6 @@ output "Trivial task: [description]. No exploration needed." Skip to Spec.
 - Jump to a solution without considering alternatives
 - Guess or assume when information is available via tools or codebase
 - Skip Explore and jump to Spec
-**To yield**, run: `bash -c 'sleep 0.1'`
-This creates a turn boundary — do not continue to Spec in the same response.
 
 ---
 
@@ -149,8 +125,6 @@ ambiguity?**
 **MUST NOT**:
 - Produce vague specs ("fix the bug", "refactor the module")
 - Skip measurable criteria
-**To yield**, run: `bash -c 'sleep 0.1'`
-This creates a turn boundary — do not continue to Challenge in the same response.
 
 ---
 
@@ -202,8 +176,6 @@ the spec.
 - Pass with "looks fine" without listing what you checked
 - Notice a problem but stay silent to "get to execution faster"
 - Fix a problem yourself in Challenge rather than returning to Spec or Explore
-**To yield**, run: `bash -c 'sleep 0.1'`
-This creates a turn boundary — do not continue to Execute in the same response.
 
 ---
 
