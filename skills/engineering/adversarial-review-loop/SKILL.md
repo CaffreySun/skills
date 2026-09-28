@@ -26,7 +26,7 @@ Don't look at what kind of object it is. Look at whether it has these three trai
 
 When all three hold, the object can be anything: a batch of changes, a proposal, a migration plan, an audit, a release checklist, a piece of research, a contract, a decision record that has already been signed off.
 
-It also applies when the user says "review this carefully" or "re-review after fixing". That sentence on its own satisfies the third trait (they asked for it explicitly). But if the first two don't hold — you can't tell right from wrong, or you can't settle the standard — leave it alone for now and settle the standard with the user first.
+It also applies when the user says "review this carefully" or "re-review after fixing". That sentence on its own satisfies the third trait (they asked for it explicitly). But if the first two don't hold — the object's correctness is plain on its own, or you cannot settle the standard — leave it alone for now, and in the second case settle the standard with the user first.
 
 ## 2. Why it has to be a loop
 
@@ -57,7 +57,7 @@ Before each round starts, **first confirm the object in your hands is identical 
 
 First check your tool list for the ability to hand a task to another independent context. That is what decides how this round is orchestrated; the five-question self-check is in [`harness-probe.md`](./references/harness-probe.md).
 
-Can you dispatch subagents, can those subagents dispatch further (that is, is there nesting), and can you dispatch several in parallel at once → by default hand the whole round to a single orchestrator ([`orchestration.md`](./references/orchestration.md) mode A; this is the key switch for controlling the cost of your main context). Can you dispatch, but not nest, or not run in parallel → use mode B, where the lead agent orchestrates (the trade-off is covered at the end of [`harness-probe.md`](./references/harness-probe.md)). Can you not dispatch at all → use the two-pass method, and state plainly in the report that "this round had no independent-context adjudication".
+Can you dispatch subagents, can those subagents dispatch further (that is, is there nesting), and can you dispatch several in parallel at once → by default hand the whole round to a single orchestrator ([`orchestration.md`](./references/orchestration.md) mode A; this is the key switch for controlling the cost of your main context). Can you dispatch, but not nest, or not run in parallel → use mode B, where the lead agent orchestrates (mode selection is at the end of [`harness-probe.md`](./references/harness-probe.md); what running it yourself costs is in [`orchestration.md`](./references/orchestration.md)). Can you not dispatch at all → use the two-pass method, and state plainly in the report that "this round had no independent-context adjudication".
 
 ### Preconditions
 
@@ -88,12 +88,12 @@ Alongside that, write these three things out **item by item**, and put them into
 
 Don't go straight to maximum process, and don't always split into many blocks. **How many blocks you use is decided by three properties of the object**: how many mutually non-overlapping pieces it cuts into, how much uncertainty there is, and how high the cost of a miss is. **The table below is a starting point, not something to look things up in**; for combinations it doesn't cover, work it out yourself the same way. As a rule, don't go past 6 blocks — beyond that you get fewer and fewer new findings, while every dispatch still costs a fixed overhead. If the object genuinely splits into a dozen independent modules and you have to add more, then add more, but know that you are paying that overhead. One more rule to keep is the partitioning principle in §7. And if the cost of a miss is irreversible, or touches an external commitment, run the full process no matter how few blocks it would cut into.
 
-| How many non-overlapping blocks | Uncertainty / cost of a miss (whichever is higher) | Starting point |
+| How many non-overlapping pieces the object cuts into | Uncertainty / cost of a miss (whichever is higher) | Starting point |
 |---|---|---|
-| 1 block, or right and wrong are plain at a glance | Low / about the same as a false alarm | Usually not worth this process — checking it yourself is enough. But an explicit request from the user overrides this row: it settles trait 3 on its own, so run the process whenever traits 1 and 2 hold |
+| 1 piece, or right and wrong are plain at a glance | Low / about the same as a false alarm | Usually not worth this process — checking it yourself is enough. But an explicit request from the user overrides this row: it settles trait 3 on its own, so run the process whenever traits 1 and 2 hold |
 | 2–4 | Low | 1–2 blocks; adjudication may be batched (max 4 per group), no requirement for multiple fix-and-re-review rounds |
 | 5–8 | Medium | 2–3 blocks; coarser is better than incomplete |
-| >8, or the blocks need to be read against each other | Medium-high / High | 4–6 blocks; the standard approach |
+| >8, or the pieces need to be read against each other | Medium-high / High | 4–6 blocks; the standard approach |
 
 **When in doubt, cut one more block** — dispatching one or two extra agents costs far less than missing a problem.
 
@@ -147,7 +147,7 @@ Judging several items one after another in the same context means each one gets 
 
 Look at **the adjudication half**: if it clearly exceeds **block count × 2**, don't rush to dispatch. Go back and check two things first — are there duplicate findings that should have been merged? Have some items been filed as "takes judgement" when they are really mechanical checks? Once you have checked both and there genuinely is nothing left to cut (every group is already sliced to the max 4, everything mergeable is merged), then **dispatch the number you computed**: **this reference line exists to catch adjudications that didn't need to happen, it is not a hard ceiling.** What you are trying to push down is the count of items that "must go out alone", not the number of blocks — cut the blocks and this reference line shrinks with them.
 
-Mechanical checking goes to an executor that only checks; work that takes judgement goes to an executor that is good at it — **get that the wrong way round and you either can't get a verdict, or you pay for nothing**. An executor that only does mechanical checking may have **no shell tool**: when it needs to see a diff or command output, the lead agent runs it first and sends the raw text over.
+Mechanical checking goes to an executor that only checks; work that takes judgement goes to an executor that is good at it — **get that the wrong way round and you either can't get a verdict, or you pay for nothing**. An executor that only does mechanical checking may have **no shell tool**: when it needs to see a diff or command output, whoever dispatches it (the lead agent in mode B, the orchestrator in mode A) runs the command first and sends the raw text along with the task.
 
 ## 8. Dedupe · independent adjudication · fix only what survived · re-review the fixes · when to stop
 

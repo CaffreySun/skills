@@ -19,5 +19,5 @@ these five questions) see [`harness-measurements.md`](./harness-measurements.md)
 - All five present → mode A (spends the least lead-agent context).
 - Have ①②③ but lack ④ or ⑤ → still mode A; handle it per the "fallback when you don't have it" row for ④/⑤ (artifacts land in a directory the subagent can read and it returns the path; read-only rests on the task body).
 - Lack ② → mode B (and if ④/⑤ are also missing, likewise follow the fallback rows).
-- Have ①② but not ③ → mode B, with the block count taken from the lower bound of the corresponding tier in §6.
+- Have ①② but not ③ → mode B, with the block count taken from the lower bound of the §6 row matching this object's uncertainty / cost of a miss.
 - Not even ① → use the two-pass method; **never** treat "asking and answering yourself inside one context" as independent adjudication (see [`orchestration.md`](./orchestration.md)).

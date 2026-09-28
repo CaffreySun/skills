@@ -26,7 +26,7 @@ and piles up round after round — "this process is too heavy" is really about t
 |---|---|
 | Many aspects to examine / more than one round expected / conclusions are all you want | **Hand it out** (the default; but with no nesting, or when you cannot dispatch in parallel, this does not hold — take mode B instead) |
 | You need to confirm back and forth with a person while reviewing, or even "where the problem is" can only be located by repeated probing | The lead agent runs it itself (mode B; once it is handed out, you can no longer pick up the user's answers) |
-| One or two blocks in total, or the number of dispatches for the whole round is small anyway | Do not hand it out; take the lower bound of that tier per main flow §6 |
+| One or two blocks in total, or the number of dispatches for the whole round is small anyway | Do not hand it out; take the lower bound of the §6 row matching this object's uncertainty / cost of a miss |
 
 ### Three things the lead agent must do
 
@@ -44,20 +44,20 @@ Object to review: <how to retrieve it, and the absolute path of that one shared 
 What the object is: <what this is, why it is done this way>
 Acceptance criteria: <if ready-made, say which spec / upstream document it is; if decided ad hoc, write those verbatim items here>
 Intentional omissions: <the list; if you do not list them, they will be reported back as defects>
-This round's uncertainty / cost of a miss: <low / medium / medium-high / high> (take the tier per main flow §6 accordingly, and **do not tier yourself down**)
+This round's uncertainty / cost of a miss: <low / medium / medium-high / high> (take the §6 row matching this object's uncertainty / cost of a miss, and **do not step yourself down a row**)
 
 Process (you dispatch the subagents and get it done yourself; no need to report the process):
 1. Partition and find problems: decide how many blocks per main flow §6, dispatch the read-only finders in parallel, and keep the blocks non-overlapping.
    **Every finder's task must carry verbatim**: the <critical> read-only hard constraint, what the object is, the acceptance criteria, the intentional-omissions list, and the finding format (ID / location / verbatim excerpt / why / severity / minimal fix / confidence) plus the fixed table header (see `SKILL.md` §7).
 2. Deduplicate (where the same spot is hit by several blocks, or a fix is fully covered by another finding, merge them into one).
-3. Independent adjudication: dispatch the ones that need thinking separately; batch the mechanical checks together by category (≤4 per batch, and each item in a batch is judged independently); the adjudicators must be freshly dispatched (they cannot be the person who found it). They may rule invalid / partially valid; a ruling of invalid must give a location + counter-evidence from the verbatim text.
+3. Independent adjudication: dispatch the ones that need thinking separately; batch the mechanical checks together by category (≤4 per batch, and each item in a batch is judged independently); the adjudicators must be freshly dispatched (they cannot be the person who found it). They may rule invalid / partially valid; a ruling of invalid must give a location + counter-evidence from the verbatim text. **Spot-check**: if a batch comes back "all valid, nothing narrowed", pick its highest-risk item and dispatch it through adjudication again, on its own.
 4. Summarize.
 
 In your reply give only these (for length and item count see `SKILL.md` §10; exceeding them counts as failure):
 1. A one-sentence conclusion + how many verdicts of each kind (valid / partially valid / invalid).
 2. The findings table: `# | location | verdict | one sentence stating the problem | minimal fix`.
 3. Items that need the user to decide — write them per the six elements in main flow §9; if there are none, write "none".
-4. How many people you dispatched in total (how many finders, how many adjudicators), and confirm that no adjudicator is a finder.
+4. How many people you dispatched in total (how many finders, how many adjudicators, plus any spot-check dispatches), confirm that no adjudicator is a finder, and record any batch that came back "all valid, nothing narrowed" together with the spot check you ran on it.
 5. For every item ruled valid / partially valid: the adjudication evidence (location + verbatim excerpt + **how that earlier check can be reproduced**: if it was a command, give the command; if you judged it by reading and comparing, list both locations and both verbatim excerpts) and the artifact path (so it can be read back on demand).
 
 Not allowed: pasting back the raw output, the tables, or the report body of the finders and the adjudicators; pasting the full text of the object;
