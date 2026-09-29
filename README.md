@@ -156,13 +156,24 @@ path to `.claude-plugin/plugin.json`. `npm run check` fails if you forget.
 
 ```bash
 npm run list     # enumerate every SKILL.md
-npm run check    # assert plugin.json matches disk (use in CI)
+npm run check    # manifest + version + changelog consistency (the CI gate)
 ./scripts/link-skills.sh   # symlink skills into ~/.claude/skills and ~/.agents/skills
 ```
 
 Anything already in a skill's slot is preserved, never deleted: a real directory
 is moved aside to `.bak-<name>-<timestamp>/`, and a symlink's *content* (not the
 link itself) is copied to the same place. Re-running won't stack up duplicates.
+
+## Releasing
+
+Releases are pull requests. `main` is protected: nothing reaches it except a
+merge, the `check` status has to pass first, and a released tag can't be moved or
+deleted.
+
+That is deliberate. `npx skills add CaffreySun/skills` installs the tip of `main`
+and never looks at a version number, so any commit that lands there is published
+on landing. `main` has to mean "released" for the version numbers to carry
+information. The procedure is in [`RELEASING.md`](./RELEASING.md).
 
 ## License
 
