@@ -12,7 +12,7 @@ after acting, but includes anything whose correctness can't be self-evidenced.
 | Skill | When it runs | What it forces |
 |---|---|---|
 | [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced, and where missing a real problem costs far more than a false alarm | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
 
 ## Why both
 
