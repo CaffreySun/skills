@@ -177,9 +177,10 @@ the routing below keys on it.
 **Trivial tasks**: the Challenge can be one line: "No edge cases. No assumptions
 beyond tool availability. No overengineering."
 
-**Executor**: dispatch the hunt to a judgement-capable subagent (task type
-`reviewer`). The read-only constraint, what its task must carry, and the shape of
-what it must return are all specified in the review loop's §5 and §7.
+**Executor**: dispatch the hunt to a subagent that can judge and is read-only
+(pick the type from your own tool list). The read-only constraint, what its task
+must carry, and the shape of what it must return are all specified in the review
+loop's §5 and §7.
 
 **Then route what survived adjudication**, by severity:
 
@@ -211,7 +212,7 @@ the spec.
 **Every action must be traceable to a specific entry in the spec.**
 
 **MUST**:
-- Before starting, initialize `todo_write` with the spec's steps (see Progress
+- Before starting, initialize your harness's progress list with the spec's steps (see Progress
   visibility)
 - Complete one step, confirm it locally, move to the next
 - If you hit something the spec does not cover → PAUSE → return to Explore
@@ -259,9 +260,10 @@ out.
   new cycle. The items are already classified, and anything "partially valid" or
   "subsumed" has already been rewritten — route the rewrites, not the originals.
 
-**Executor**: dispatch the hunt to a judgement-capable subagent (task type
-`reviewer`). The read-only constraint, what its task must carry, and the shape of
-what it must return are all specified in the review loop's §5 and §7.
+**Executor**: dispatch the hunt to a subagent that can judge and is read-only
+(pick the type from your own tool list). The read-only constraint, what its task
+must carry, and the shape of what it must return are all specified in the review
+loop's §5 and §7.
 
 **MUST NOT**:
 - Claim PASS when a problem exists
@@ -335,7 +337,7 @@ One file per task-slug. Append each cycle to the same file — do not create new
 files for new cycles.
 
 Four phases get recorded in the file. **Execute is NOT written to the file** —
-track progress with `todo_write` instead.
+track progress with your harness's progress list instead.
 
 File structure template: see `references/spec-template.md`.
 **Constraints**:
@@ -354,7 +356,7 @@ File structure template: see `references/spec-template.md`.
 ### Progress visibility
 
 - When entering the Execute phase, if the spec has **3 or more distinct steps**,
-  use `todo_write` to track progress. Map each step to a todo item; check off as
+  use your harness's progress list to track progress. Map each step to a todo item; check off as
   you complete each one.
 - Specs with 1–2 steps do not need a todo list
 - **MUST NOT** create a todo list during Explore, Spec, or Challenge — the steps
