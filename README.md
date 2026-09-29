@@ -157,6 +157,7 @@ path to `.claude-plugin/plugin.json`. `npm run check` fails if you forget.
 ```bash
 npm run list     # enumerate every SKILL.md
 npm run check    # manifest + version + changelog consistency (the CI gate)
+npm run check:release   # the same, plus a comparison against the commit it lands on
 ./scripts/link-skills.sh   # symlink skills into ~/.claude/skills and ~/.agents/skills
 ```
 
@@ -166,14 +167,13 @@ link itself) is copied to the same place. Re-running won't stack up duplicates.
 
 ## Releasing
 
-`main` is protected: nothing reaches it except a merge, the `check` status has to
-pass first, and a released tag can't be moved or deleted. Version numbers move at
-a release, and a release is a decision — so between releases `main` is ahead of
-the newest tag.
+`main` is the released state. Nothing reaches it except a merge, the `check`
+status has to pass first, and CI tags every commit that lands — so no commit on
+`main` is ever without a version. A released tag can't be moved or deleted.
 
-That distinction matters, because `npx skills add CaffreySun/skills` installs the
-tip of `main` and never looks at a version number. Pin a tag when you want a known
-state. How a version is chosen, and the procedure, are in
+That has to hold, because `npx skills add CaffreySun/skills` installs the tip of
+`main` and never looks at a version number: whatever is there is what everyone
+unpinned gets. How a version is chosen, and the procedure, are in
 [`RELEASING.md`](./RELEASING.md).
 
 ## License

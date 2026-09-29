@@ -80,10 +80,7 @@ for (const rel of listed) {
 // The changelog is the only record of what a version contains, so a version
 // bump without a dated section for it is a release nobody can read.
 const changelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
-if (!/^## \[Unreleased\]/m.test(changelog)) {
-  problems.push("CHANGELOG.md has no [Unreleased] section");
-}
-const newest = /^## \[(\d+\.\d+\.\d+)\]/m.exec(changelog);
+const newest = /^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}\s*$/m.exec(changelog);
 if (!newest) {
   problems.push("CHANGELOG.md has no dated release section");
 } else if (newest[1] !== pkgVersion) {

@@ -134,6 +134,7 @@ scripts/                         # 维护脚本
 ```bash
 npm run list     # 列出所有 SKILL.md
 npm run check    # 清单 + 版本号 + changelog 三者一致（CI 门禁用这个）
+npm run check:release   # 同上，再跟这个分支将要落地的提交比一次
 ./scripts/link-skills.sh   # 把技能软链到 ~/.claude/skills 和 ~/.agents/skills
 ```
 
@@ -143,12 +144,12 @@ npm run check    # 清单 + 版本号 + changelog 三者一致（CI 门禁用这
 
 ## 发版
 
-发版走 PR。`main` 有保护：只能合并进去，而且 `check` 必须先通过；已发布的 tag 不能
-移动也不能删。
+`main` 就是发布态。只有合并能进，`check` 必须先通过，而且 CI 会给每一个落地的提交打
+tag——所以 `main` 上不存在没有版本的提交。已发布的 tag 不能移动也不能删。
 
-这是故意的。`npx skills add CaffreySun/skills` 取的是 `main` 的尖端，根本不看版本号，
-所以落进 `main` 的提交在落地的那一刻就已经发出去了。要让版本号携带信息，`main` 就
-必须等于「已发布」。流程见 [`RELEASING.md`](./RELEASING.md)。
+这条必须成立，因为 `npx skills add CaffreySun/skills` 取的是 `main` 的尖端、根本不看
+版本号：那里有什么，未固定的人拿到的就是什么。版本号怎么选、流程怎么走，见
+[`RELEASING.md`](./RELEASING.md)。
 
 ## 开源协议
 
