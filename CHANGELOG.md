@@ -10,6 +10,21 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.2.0] - 2026-09-29
+
+### Changed
+
+- **Splitting the adjudication is now decided before dispatch, not confirmed after
+  the round.** §6 said to use as few subagents as you can; §8 allowed splitting one
+  finding list across two adjudicators when it is too large for one context; §11
+  asked afterwards whether adjudication had been one adjudicator. In a run that
+  went to two, nothing asked the question at the moment it was answered — the lead's
+  own plan said one adjudicator, two were dispatched, and no reason was recorded.
+  §6 now carries the question as a gate you answer before you dispatch, and says
+  what the reason has to be: the size of the list, not the number of rows on it,
+  and never speed. §11's item confirms the gate was used rather than standing in
+  for it, and §10's per-round summary carries the reason when a split happened.
+
 ## [1.1.3] - 2026-09-29
 
 ### Fixed
