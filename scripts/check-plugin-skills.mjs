@@ -54,10 +54,42 @@ for (const rel of listed) {
 
 // The plugin version must track the root package.json version: they ship as
 // one artifact and a drifted pair silently publishes stale skill copies.
-const pkgVersion = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const pkgVersion = pkg.version;
 if (pkgVersion !== plugin.version) {
   problems.push(
     `version drift: package.json is ${pkgVersion}, plugin.json is ${plugin.version}`,
+  );
+}
+
+// Each skill carries its own version. Nothing installs by it -- `npx skills add
+// owner/repo` resolves a repository ref -- so it is a record for a reader, but
+// it still has to be a well-formed one.
+for (const rel of listed) {
+  const file = path.join(root, rel, "package.json");
+  if (!fs.existsSync(file)) {
+    problems.push(`no package.json next to SKILL.md: ${rel}`);
+    continue;
+  }
+  const v = JSON.parse(fs.readFileSync(file, "utf8")).version;
+  if (!/^\d+\.\d+\.\d+$/.test(v ?? "")) {
+    problems.push(`not a semver version: ${rel}/package.json is ${JSON.stringify(v)}`);
+  }
+}
+
+// The changelog is the only record of what a version contains, so a version
+// bump without a dated section for it is a release nobody can read.
+const changelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
+if (!/^## \[Unreleased\]/m.test(changelog)) {
+  problems.push("CHANGELOG.md has no [Unreleased] section");
+}
+const newest = /^## \[(\d+\.\d+\.\d+)\]/m.exec(changelog);
+if (!newest) {
+  problems.push("CHANGELOG.md has no dated release section");
+} else if (newest[1] !== pkgVersion) {
+  problems.push(
+    `CHANGELOG.md's newest release is ${newest[1]}, but package.json is ${pkgVersion}`
+    + " -- release the version, or bump the version",
   );
 }
 

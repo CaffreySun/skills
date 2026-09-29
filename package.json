@@ -10,6 +10,6 @@
   "license": "MIT",
   "scripts": {
     "list": "bash scripts/list-skills.sh",
-    "check": "node scripts/check-plugin-skills.mjs"
+    "check": "node scripts/check-plugin-skills.mjs --check"
   }
 }
