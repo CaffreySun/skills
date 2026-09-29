@@ -10,6 +10,18 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.1.2] - 2026-09-29
+
+### Fixed
+
+- **The English README stated a wider scope for `adversarial-review-loop` than the
+  skill does.** Its "When it runs" cell named one of the three conditions in
+  `SKILL.md` §1; the Chinese cell, written in the same commit, named two. §1
+  requires all three, and the dropped one is the condition that decides whether the
+  process is worth its cost at all — "when the two costs are about equal, checking
+  the thing yourself is enough." The English cell now carries it, in the skill's
+  own words.
+
 ## [1.1.1] - 2026-09-29
 
 ### Fixed
