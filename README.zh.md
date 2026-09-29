@@ -61,6 +61,12 @@ npx skills add CaffreySun/skills --skill adversarial-review-loop
 
 这条把普通文件写进你的仓库，归你所有、可以改。想拉我的更新时跑 `npx skills update`。
 
+默认取的是默认分支的尖端。要固定到某个发布版本，加上 `#<ref>`——tag、分支名、提交 SHA 都行：
+
+```bash
+npx skills add CaffreySun/skills#v0.2.0 --skill task-spec
+```
+
 适用于[所有支持 skills 的 agent](https://github.com/vercel-labs/skills#supported-agents)：
 Claude Code、Codex、Cursor、OpenCode 等 70+ 个。
 

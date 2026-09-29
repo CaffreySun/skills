@@ -1,6 +1,6 @@
 {
   "name": "adversarial-review-loop",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "AI skill: review any object whose correctness cannot be self-evidenced, as a closed loop — hunt for problems, adjudicate every finding in a context that did not make it, fix only what survives, then re-review the fixes until a round yields zero findings",
   "license": "MIT",
   "homepage": "https://github.com/CaffreySun/skills/tree/main/skills/engineering/adversarial-review-loop",

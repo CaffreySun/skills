@@ -73,6 +73,13 @@ npx skills add CaffreySun/skills --skill adversarial-review-loop
 This writes ordinary files into your repo that you own and can edit. Pull my
 changes when you want them with `npx skills update`.
 
+By default this takes the tip of the default branch. To pin a release, add
+`#<ref>` — the CLI accepts a tag, a branch, or a commit SHA:
+
+```bash
+npx skills add CaffreySun/skills#v0.2.0 --skill task-spec
+```
+
 Works with any [agent that supports skills](https://github.com/vercel-labs/skills#supported-agents):
 Claude Code, Codex, Cursor, OpenCode, and 70+ more.
 

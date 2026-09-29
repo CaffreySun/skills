@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-29
+
+Both skills take a major version: their behaviour changes in ways an upgrade would
+notice. `npx skills add CaffreySun/skills` installs the default branch, so pinning
+to this release has to be explicit —
+`npx skills add CaffreySun/skills#v0.2.0 --skill task-spec`. The repository and
+plugin versions move together and `npm run check` fails if they drift; the two
+skill-level versions are a record for a reader, not something the installer reads.
+
 ### Changed
 
 - **`adversarial-review-loop` rewritten.** It is now written in English and
