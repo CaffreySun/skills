@@ -73,12 +73,13 @@ changed alongside this one", rather than handing out a checklist to tick through
 
 The loop runs in one of two modes, and what separates them is who owns the fix.
 
-A **full round** is steps 1 to 6: freeze the object, hunt for problems, dedupe, adjudicate every
+A **full round** is steps 1 to 6: get the material ready, hunt for problems, dedupe, adjudicate every
 finding in a context that did not find it, fix what the finding list carries, then re-review the
 fixes. Use it when this process is the only thing that will act on the findings, and therefore has
 to close its own loop.
 
-A **judge-only round** is steps 1 to 4, and then it stops: freeze, hunt, dedupe, adjudicate.
+A **judge-only round** is steps 1 to 4, and then it stops: get the material ready, hunt, dedupe,
+adjudicate.
 Nothing is fixed inside the round and nothing is re-reviewed inside it. What the round
 produces is its finding list, and some other process decides what happens to that list. Use it
 when the round sits inside a larger process that owns the fix and decides when to run the round

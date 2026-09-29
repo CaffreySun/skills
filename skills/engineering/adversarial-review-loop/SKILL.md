@@ -1,7 +1,7 @@
 ---
 name: adversarial-review-loop
 description: >
-  Closed-loop adversarial review: freeze the object → hunt for problems → dedupe → adjudicate every finding in a
+  Closed-loop adversarial review: get the material ready → hunt for problems → dedupe → adjudicate every finding in a
   context that did not make it (one adjudicator judges the whole list; an "invalid" verdict must come with
   counter-evidence) → then either fix what survived and send the fixes back through review until a round yields
   no "valid", no "partially valid" and no "subsumed" finding, or — in judge-only mode — stop there and hand over
@@ -43,7 +43,7 @@ The worst defects are usually not the ones you find by walking a checklist. They
 
 ```mermaid
 flowchart LR
-  A[1 Freeze the object] --> B[2 Hunt for problems]
+  A[1 Get the material ready] --> B[2 Hunt for problems]
   B --> C[3 Dedupe]
   C --> D[4 Adjudicate every finding in a context that did not make it]
   D -->|judge-only round stops here| H[Stop: hand over the findings]
@@ -53,7 +53,7 @@ flowchart LR
   F -->|anything survives again| B
 ```
 
-Before each round starts, **first confirm the object in your hands is identical to the frozen copy**; if it isn't, freeze it again and go back to step 1. Short of that, every round goes back to step 2, never to step 1.
+Every round after the first goes back to step 2, never to step 1.
 
 ### The two modes
 
@@ -81,14 +81,13 @@ What the orchestrator's task has to carry, and what its reply has to contain, ar
 - You have settled the standard from trait 2 of §1.
 - The object can be retrieved, can be stored, can be compared before and after a change, and can be rolled back if needed.
 
-## 5. Freeze the object under review
+## 5. Get the material ready
 
-Two things need freezing: **one unified body of material for reviewers to read**, and **one fingerprint you can compare against repeatedly**. This has nothing to do with whether you use version control. Freezing those two takes four steps:
+The reviewers read a copy, not your context, so before the round starts one body of material has to exist at a path they can reach. Getting it ready takes three steps:
 
-1. **The copy has to live somewhere subagents can read it**: by default a scratch directory inside the working tree (most harnesses only let subagents read inside the working tree, and a headless session usually has no permission prompt to click — if it can't read it, it can't read it). The dispatch prompt must give an **absolute path**. Under version control it will show up as untracked; keep it out of the way by adding it to the repository's local exclude file (get its path with `git rev-parse --git-path info/exclude`) — note that this is a persistent change to local configuration. With no version control, just put it somewhere nothing else reads.
-2. **Record the content fingerprint, how to retrieve it, and this round's baseline** (byte count / digest / retrieval command) — the fingerprint proves **this copy has not been changed from outside since the moment it was frozen**. The object changing because of this round's own fixes is normal and does not count as "changed from outside"; when that happens, freeze it again per §3 and record a new fingerprint (save this round's fix delta first). This copy is itself the baseline for comparing across rounds. Where version control exists, you may separately record an identifier for a working-tree snapshot (for example the output of `git stash create`) as a backup.
-3. **Record what you intend to change this round.** With version control, `git status --porcelain` lists it. Without it, hash every file before you start and again after you finish; comparing the two tells you what actually moved. Check that against your plan and confirm you touched nothing outside it. If you can do neither, write clearly in the report that "this part rests on self-report plus manual checking" — do not write it as though you had confirmed it.
-4. **Prepare the unified material**: if there is a delta, give the delta (with version control, use the kind that includes staged changes; for newly added files run `git add -N` first — a bare `git diff` shows neither staged changes nor new files; if you cannot produce a delta, give full copies of those files instead). If there is no delta, give full copies.
+1. **The copy has to live somewhere subagents can read it**: by default a scratch directory inside the working tree (most harnesses only let subagents read inside the working tree, and a headless session usually has no permission prompt to click — if it can't read it, it can't read it). The dispatch prompt must give an **absolute path**. Under version control it will show up as untracked; keep it out of the way by adding it to the repository's local exclude file (get its path with `git rev-parse --git-path info/exclude`) — note that this is a persistent change to local configuration. With no version control, just put it somewhere nothing else reads. **Keep the copy until the round is over**: in a full round, last round's copy is what the re-review compares against (§8).
+2. **Prepare what the material contains**: if there is a delta, give the delta (with version control, use the kind that includes staged changes; for newly added files run `git add -N` first — a bare `git diff` shows neither staged changes nor new files; if you cannot produce a delta, give full copies of those files instead). If there is no delta, give full copies.
+3. **Record what you intend to change this round**, so §10 can check it at closing. With version control, `git status --porcelain` lists it. Without it, hash every file before you start and again after you finish; comparing the two tells you what actually moved. Check that against your plan and confirm you touched nothing outside it. If you can do neither, write clearly in the report that "this part rests on self-report plus manual checking" — do not write it as though you had confirmed it.
 
 Alongside that, write these three things out **item by item**, and put them into **every finder's task verbatim**:
 
@@ -129,7 +128,7 @@ When you dispatch more than one task at the same level, **send them all at once*
 
 ### When the whole round goes to one orchestrator
 
-If §4 put a subagent in charge of the round, its task carries everything above, plus the three things from §5 written out verbatim — what the object is, the acceptance criteria, and the intentional-omissions list. Tell it to freeze the object per §5 and to decide how much to split per §6. **Do not step it down below those bounds**; it decides inside them, and it decides from its own capability and the object.
+If §4 put a subagent in charge of the round, its task carries everything above, plus the three things from §5 written out verbatim — what the object is, the acceptance criteria, and the intentional-omissions list. Tell it to get the material ready per §5 and to decide how much to split per §6. **Do not step it down below those bounds**; it decides inside them, and it decides from its own capability and the object.
 
 Its reply contains conclusions only:
 
@@ -197,7 +196,7 @@ So the list is problems that hold, each already cut down to the part that stands
 
 ### Re-review the fixes, and when you may stop
 
-Send **everything fixed this round** to review as a new batch: **send only this round's delta, never the whole object**. How you produce the delta depends on where the object lives — **first** compare last round's frozen copy against the current object item by item (this works with or without version control). If version control is in use and the baseline you hold genuinely represents what was frozen last round, you may also use `git diff <baseline>` (it compares the working tree, covering committed, staged, and unstaged parts; run `git add -N` for new files first, see §5 item 4). Either way, make sure the adjudicator can see the delta. Every other step is exactly as before.
+Send **everything fixed this round** to review as a new batch: **send only this round's delta, never the whole object**. How you produce the delta depends on where the object lives — **first** compare last round's copy against the current object item by item (this works with or without version control). If version control is in use and the baseline you hold genuinely represents last round's state, you may also use `git diff <baseline>` (it compares the working tree, covering committed, staged, and unstaged parts; run `git add -N` for new files first, see §5 item 2). Either way, make sure the adjudicator can see the delta. Every other step is exactly as before.
 
 **In a full round you may stop when a re-review round comes back with "0 valid", "0 partially valid" and "0 subsumed"** (anything judged "partially valid" has to be fixed using its rewrite, and anything judged "subsumed" has to be fixed at the root, before it counts as done). A judge-only round has no such test — see §3.
 

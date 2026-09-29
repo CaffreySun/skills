@@ -94,7 +94,7 @@ The spec is a **binding contract**: Execute follows it, Verify judges by it.
 No spec reaches execution without surviving an adversarial challenge first.
 
 Challenge and Verify each run as a **judge-only round** of `adversarial-review-loop`.
-That skill supplies the method — freeze the object, hunt for problems, adjudicate
+That skill supplies the method — get the material ready, hunt for problems, adjudicate
 every finding in a context that did not write what is being judged. task-spec keeps
 the routing, and keeps the rule that a review phase does not fix anything: the fix
 happens back in Spec or Explore, and the phase runs again on what comes back.
@@ -121,7 +121,7 @@ over the finding list — for when something else owns the fix and the re-entry,
 which is how `task-spec` runs it at its Challenge and Verify phases.
 
 The skill carries no project-specific procedure: how much to split, if at all,
-what counts as "correct", how to freeze the object — all decided by the agent
+what counts as "correct", how the material is prepared — all decided by the agent
 applying it, from its own project and scenario.
 
 [Read the skill →](./skills/engineering/adversarial-review-loop/SKILL.md)

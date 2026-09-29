@@ -67,7 +67,7 @@ A single pass cannot correct itself. Pairing the phases into loops lets problems
   not that the last step went crooked.
 
 Where a finding goes from each state is this skill's own decision: it returns to the phase that
-can deal with it. How one gate round works inside — how the plan or the result is frozen, how
+can deal with it. How one gate round works inside — how the material is prepared, how
 problems are hunted, and who judges — is not decided here. That comes from the
 `adversarial-review-loop` skill, and a later section explains why the two fit together.
 
@@ -101,13 +101,13 @@ a careless execution.
 
 Reviewing your own work most likely ends with letting it pass — that is what hole 3 is about. So
 both gates are handed to the `adversarial-review-loop` skill: Challenge judges the plan, Verify
-judges the result. That skill has two modes. A **full round** runs its steps 1–6 — freeze the
-object, hunt for problems, dedupe, adjudicate every finding independently, fix what survived,
-review the fixes. A **judge-only round** runs steps 1–4 and stops: nothing is
+judges the result. That skill has two modes. A **full round** runs its steps 1–6 — get the
+material ready, hunt for problems, dedupe, adjudicate every finding independently, fix what
+survived, review the fixes. A **judge-only round** runs steps 1–4 and stops: nothing is
 fixed and nothing is re-reviewed inside the round, and what comes back is the finding list.
 task-spec uses the second mode.
 
-The loop supplies the method of one round: a frozen object every finder can read, a hunt
+The loop supplies the method of one round: one body of material every finder can read, a hunt
 that may go past the checklist and ask "what should have moved with this change, and
 didn't?", and an adjudicator who did not write the finding and can therefore reject it
 honestly. All of it follows from one discipline: *the
@@ -160,14 +160,10 @@ those items are numerous, and each one looks like an obvious gap, so they bury t
 matter. The list must also stay unchanged for the duration of a round: if it changes halfway, the
 verdicts already given lose the standard they were judged against.
 
-**The frozen copy.** Before a Challenge or Verify round starts, the spec file is that round's
-frozen copy. It already satisfies what the loop requires of a frozen object: the finders can read
-it because it sits inside the working tree, it can be compared before and after, and it can be
-rolled back. Two rules follow. Record a digest of the file before the round and check it again
-before the next round — if the file moved and task-spec's own routing did not move it, the round
-was judged against an object that changed underneath it, so freeze again and run the round again.
-And a spec that changed because the previous round rewrote it is normal: freeze the new state and
-record its new digest.
+**The object of a round.** Before a Challenge or Verify round starts, the spec file **is** that
+round's object. It already satisfies what the loop requires of that material: the finders can
+read it because it sits inside the working tree, it can be compared before and after, and it can
+be rolled back — so there is no separate copy to make.
 
 ## Limitations (honest version)
 
@@ -179,8 +175,8 @@ record its new digest.
 - **The process itself does not produce quality.** Run all five phases while shortchanging
   every one of them, and the result is still bad. This applies just the same to a human doing
   the review.
-- **The expensive half of the loop is paid twice.** Challenge and Verify each go through freeze,
-  hunt, and independent adjudication. What a judge-only round saves is the
+- **The expensive half of the loop is paid twice.** Challenge and Verify each go through getting
+  the material ready, hunt, and independent adjudication. What a judge-only round saves is the
   fix-and-re-review half, which task-spec would have had to run again through its own routing
   anyway.
 - **The overhead is real.** Small tasks skip phases (every phase has a "trivial task"

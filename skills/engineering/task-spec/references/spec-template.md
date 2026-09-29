@@ -8,10 +8,6 @@ Four phases are recorded: Explore, Spec, Challenge, Verify.
 
 ## Cycle 1
 
-**Frozen copy**: this file is the frozen object for the round. Record its digest
-before the round starts and check it again before the next round
-(`shasum -a 256 .task_spec/<slug>.md`).
-
 ### Explore
 <problem understanding, directions considered, directions eliminated and why>
 

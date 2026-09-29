@@ -141,7 +141,7 @@ gate, not a formality. You do not execute until the spec survives this phase.
 **Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
 The object is the Spec body; the standard is the task request plus the full
 Explore output; the items below are what the hunt looks for. Take its steps 1–4 —
-freeze the object, hunt for problems, dedupe, adjudicate every finding in a
+get the material ready, hunt for problems, dedupe, adjudicate every finding in a
 context that did not write the spec — and **stop there**. Steps 5–6
 are this skill's inner loop instead: nothing is fixed in Challenge, the routing
 below sends each finding to Spec or Explore, and this phase runs again on what
@@ -232,9 +232,9 @@ carried what it should have and disturbed nothing else.
 
 **Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
 The object is what you produced together with the change that produced it; the
-standard is the acceptance criteria in the spec. Take its steps 1–4 — freeze the
-object, hunt for problems, dedupe, adjudicate every finding in a context that
-did not produce the work — and **stop there**. Steps 5–6 are this skill's outer
+standard is the acceptance criteria in the spec. Take its steps 1–4 — get the
+material ready, hunt for problems, dedupe, adjudicate every finding in a context
+that did not produce the work — and **stop there**. Steps 5–6 are this skill's outer
 loop: nothing is fixed in Verify, the routing below sends each finding to
 Explore, and this phase runs again on what comes back.
 
@@ -318,21 +318,16 @@ These are defaults. Override when the task calls for it.
 - **Recursively decomposed sub-tasks**: use `--` to connect parent and child slugs.
   E.g. `.task_spec/add-tag-stats--perf-optimize.md`
 
-### The frozen copy
+### The object of a round
 
-Before a Challenge or Verify round starts, the spec file **is** that round's frozen
-copy. It already satisfies what the review loop's §5 requires — subagents can read
-it because it lives inside the working tree, it can be compared before and after,
-and it can be rolled back. Two rules follow from treating it that way:
+Before a Challenge or Verify round starts, the spec file **is** that round's object.
+It already satisfies what the review loop's §5 requires — subagents can read it
+because it lives inside the working tree, it can be compared before and after, and
+it can be rolled back — so there is no separate copy to make.
 
-- **Record a digest of the spec file before the round starts, and check it again
-  before the next round.** If it moved and this skill's own routing did not move
-  it, the round was run against something that changed underneath it — re-freeze
-  and run the round again.
-- **The spec changing because the loop rewrote it is normal**, not a violation.
-  Freeze again and record the new digest. The intentional-omissions list is part
-  of the frozen object: changing it mid-round invalidates the verdicts already
-  given.
+One rule follows: **the intentional-omissions list is part of that object.** It
+states the standard the round judges against, and changing the standard mid-round
+invalidates the verdicts already given (the review loop's §1).
 
 ### File structure: append cycles, never split
 
