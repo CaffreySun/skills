@@ -77,7 +77,7 @@ By default this takes the tip of the default branch. To pin a release, add
 `#<ref>` — the CLI accepts a tag, a branch, or a commit SHA:
 
 ```bash
-npx skills add CaffreySun/skills#v0.2.0 --skill task-spec
+npx skills add CaffreySun/skills#v1.0.0 --skill task-spec
 ```
 
 Works with any [agent that supports skills](https://github.com/vercel-labs/skills#supported-agents):
@@ -166,14 +166,15 @@ link itself) is copied to the same place. Re-running won't stack up duplicates.
 
 ## Releasing
 
-Releases are pull requests. `main` is protected: nothing reaches it except a
-merge, the `check` status has to pass first, and a released tag can't be moved or
-deleted.
+`main` is protected: nothing reaches it except a merge, the `check` status has to
+pass first, and a released tag can't be moved or deleted. Version numbers move at
+a release, and a release is a decision — so between releases `main` is ahead of
+the newest tag.
 
-That is deliberate. `npx skills add CaffreySun/skills` installs the tip of `main`
-and never looks at a version number, so any commit that lands there is published
-on landing. `main` has to mean "released" for the version numbers to carry
-information. The procedure is in [`RELEASING.md`](./RELEASING.md).
+That distinction matters, because `npx skills add CaffreySun/skills` installs the
+tip of `main` and never looks at a version number. Pin a tag when you want a known
+state. How a version is chosen, and the procedure, are in
+[`RELEASING.md`](./RELEASING.md).
 
 ## License
 

@@ -64,7 +64,7 @@ npx skills add CaffreySun/skills --skill adversarial-review-loop
 默认取的是默认分支的尖端。要固定到某个发布版本，加上 `#<ref>`——tag、分支名、提交 SHA 都行：
 
 ```bash
-npx skills add CaffreySun/skills#v0.2.0 --skill task-spec
+npx skills add CaffreySun/skills#v1.0.0 --skill task-spec
 ```
 
 适用于[所有支持 skills 的 agent](https://github.com/vercel-labs/skills#supported-agents)：

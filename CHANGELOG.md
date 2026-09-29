@@ -1,24 +1,41 @@
 # Changelog
 
-All notable changes to this repository are documented here. Versions are set on
-the root `package.json` and mirrored into `.claude-plugin/plugin.json`;
-`scripts/check-plugin-skills.mjs --check` fails if they drift.
+All notable changes to this repository are documented here. The format is based
+on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); how a version number
+is chosen is in [RELEASING.md](./RELEASING.md).
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+A version whose step up from the version below it is a major one carries a
+`**Breaking:**` line naming which of the four breaking facts applies.
+`npm run check` fails if the headings are not a legal semver sequence, if a major
+step has no such line, or if a minor or patch step carries one anyway.
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-09-29
+## [1.0.0] - 2026-09-29
 
-Both skills take a major version: their behaviour changes in ways an upgrade would
-notice. `npx skills add CaffreySun/skills` installs the default branch, so pinning
-to this release has to be explicit —
-`npx skills add CaffreySun/skills#v0.2.0 --skill task-spec`. The repository and
-plugin versions move together and `npm run check` fails if they drift; the two
-skill-level versions are a record for a reader, not something the installer reads.
+**Breaking:** steps, removed, depends — `adversarial-review-loop` runs a different
+process than the version before it: a judge-only round, four verdicts instead of
+three, the orchestration machinery gone, the frozen-copy check gone. And
+`task-spec`'s Challenge and Verify no longer stand alone — they run that skill.
+
+The version numbers were reset here. 0.1.0 and 0.2.0 were published days apart
+while nobody was using the repository, and both carried numbers inherited from
+before the skills moved into this monorepo: the per-skill files said `1.0.0` and
+`3.0.0`, and the repository number had never described the skills at all. The
+repository and both skills now start from 1.0.0 together, and the rule for moving
+them is in [RELEASING.md](./RELEASING.md). The v0.1.0 and v0.2.0 tags stay where
+they are; they are superseded, not withdrawn.
 
 ### Changed
 
+- **`main` can no longer be pushed to.** A ruleset requires every change to arrive
+  through a pull request, with the `check` status passing and the branch up to
+  date before merging; released tags cannot be moved or deleted.
+  `.github/workflows/check.yml` runs the check on every pull request and on `main`.
+- **`npm run check` can fail now.** It never could: the script only exits non-zero
+  with `--check`, and the npm script did not pass it. It also checks more than the
+  manifest — the changelog's newest release has to equal `package.json`'s version,
+  and every skill has to carry a well-formed version.
 - **`adversarial-review-loop` rewritten.** It is now written in English and
   carries no project-specific procedure: how much to split, what counts as
   correct, and how the material is prepared are all decided by the agent applying

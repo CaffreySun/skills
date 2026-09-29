@@ -1,20 +1,19 @@
 # Releasing
 
-`main` is the released state. Every change reaches it through a pull request, and
-a version is a tag on a commit that is already on `main`.
+`main` only moves through a pull request. A version is a tag on a commit that is
+already on `main`. Version numbers move at a release, and a release is a decision
+— so between releases `main` is ahead of the newest tag.
 
-This matters more here than it does in most repositories, because of how the skill
-is installed:
+This matters because of how the skill is installed:
 
 ```bash
 npx skills add CaffreySun/skills            # the tip of the default branch
-npx skills add CaffreySun/skills#v0.2.0     # a fixed ref
+npx skills add CaffreySun/skills#v1.0.0     # a fixed tag
 ```
 
 The first form does not read the version numbers at all — it clones `main` and
-takes what is there. So any commit that lands on `main` is published the moment it
-lands, whatever the version says. The version numbers only mean something if
-`main` only ever moves at a release.
+takes what is there. So someone installing without a ref gets whatever has been
+merged, released or not. Pin a tag when you want a known state.
 
 ## One-time setup: protect the branch and the tags
 
@@ -56,7 +55,7 @@ gh api --method POST repos/CaffreySun/skills/rulesets --input - <<'JSON'
 }
 JSON
 
-# Tags: a released tag cannot be moved or deleted, so `#v0.2.0` keeps resolving
+# Tags: a released tag cannot be moved or deleted, so `#v1.0.0` keeps resolving
 # to the same commit. Creating new tags is still allowed.
 gh api --method POST repos/CaffreySun/skills/rulesets --input - <<'JSON'
 {
@@ -99,6 +98,50 @@ gh pr merge --squash
 
 `required_linear_history` is on, so use squash or rebase. This repository has no
 merge commits, and keeping it that way is what makes `git log` readable.
+
+## Choosing the version
+
+Versions move at a release, not on every pull request. A release can be one pull
+request or ten; what makes it a release is that the numbers and the changelog move
+with it and a tag goes on the merge commit.
+
+From `a.b.c` the next version can only be `a.b.(c+1)`, `a.(b+1).0` or `(a+1).0.0`.
+`npm run check` enforces that, so a number cannot jump — you cannot go from `1.0.0`
+to `1.4.0` or `3.0.0` in one step.
+
+Which of the three:
+
+**Patch** — the instructions mean the same thing afterwards. Wording, typos, a
+link that got fixed, a file moved with its references updated, anything under
+`docs/` or the README.
+
+**Minor** — the instructions mean more than they did, and a run that was already
+following them behaves the same. A new rule, a new section, an added reference
+file, one more item in a checklist that already existed.
+
+**Major** — one of these is true, and the changelog entry has to say which:
+
+| Fact | What it means |
+|---|---|
+| `steps` | the steps of the process changed — how many there are, what order they come in, or a step appearing or disappearing |
+| `removed` | something that existed is gone — a file, a mode, a rule, a verdict, a section |
+| `trigger` | when the skill runs changed — the frontmatter `description`, or the name |
+| `depends` | it stopped standing alone — it now needs another skill to work |
+
+If none of the four holds, it is not a major version, whatever else changed. Write
+the line at the top of the version's changelog section:
+
+```
+**Breaking:** steps, removed — <what changed>
+```
+
+`npm run check` fails if a major step has no such line, if the line names anything
+outside that list, or if a minor or patch step carries one anyway.
+
+The two skill versions follow the same rule, each judged against the changes
+inside that skill. The repository and plugin versions move together and are the
+ones an install can be pinned to — the installer reads repository refs, so a skill
+version is a record for a reader.
 
 ## A release
 
