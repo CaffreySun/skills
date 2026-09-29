@@ -27,7 +27,10 @@ problem differ in nature, and they need different fixes.
 ## Two kinds of problem need two strategies
 
 **Verification** is the easy half. "Does the output match the spec?" is an objective question,
-so it can be enforced from outside: a contract, a checklist, a set of evidence is enough.
+so it can be enforced from outside: a contract, a checklist, a set of evidence is enough. What
+it is not is exhaustive. A checklist only asks about what the spec already thought of, and the
+one thing that shows what the spec left out is the change itself. So Verify walks the change as
+well as the criteria.
 
 **Thinking** is the hard half. "Is the direction right?" "Is it good enough?" These need
 something the model does not have: an internal compass pointing at "better." The model points
@@ -63,6 +66,11 @@ A single pass cannot correct itself. Pairing the phases into loops lets problems
   because a failed verification usually means the original understanding was insufficient,
   not that the last step went crooked.
 
+Where a finding goes from each state is this skill's own decision: it returns to the phase that
+can deal with it. How one gate round works inside — how the plan or the result is frozen, split
+up, and judged — is not decided here. That comes from the `adversarial-review-loop` skill, and a
+later section explains why the two fit together.
+
 Each loop narrows the problem, and at the same time accumulates an auditable record.
 
 ## Why the spec must be a binding contract, not a reference plan
@@ -82,16 +90,84 @@ So task-spec states it outright: **the spec is a binding contract that may not b
 from.** Execute may only do what the spec says; Verify may only judge PASS/FAIL against the
 acceptance criteria the spec states. Anything not in the spec = outside this task's scope.
 
+This bounds what Verify may **decide**, not what it may **notice**. A problem it spots outside the
+acceptance criteria is still reported — it just goes back to Explore, where the scope is settled
+again, instead of being judged on the spot.
+
 This is not formalism. It is what makes it mechanically possible to pull something back from
 a careless execution.
 
-## Why Challenge is delegated to a subagent
+## Challenge and Verify each run as a judge-only round of the review loop
 
-Reviewing your own work most likely ends with letting it pass — that is what hole 3 is about.
+Reviewing your own work most likely ends with letting it pass — that is what hole 3 is about. So
+both gates are handed to the `adversarial-review-loop` skill: Challenge judges the plan, Verify
+judges the result. That skill has two modes. A **full round** runs its steps 1–6 — freeze the
+object, partition it and hunt in parallel, dedupe, adjudicate every finding independently, fix
+what survived, review the fixes. A **judge-only round** runs steps 1–4 and stops: nothing is
+fixed and nothing is re-reviewed inside the round, and what comes back is the finding list.
+task-spec uses the second mode.
 
-Give it to a subagent in a separate context, because it does not carry the prior of "this is
-what I came up with." The same model, moved into a context with no vested interest, attacks
-noticeably differently.
+The loop supplies the method of one round: a frozen object every finder can read, a partition
+that covers the object without overlap, a hunt that may go past the checklist and ask "what
+should have moved with this change, and didn't?", and an adjudicator who did not write the
+finding and can therefore reject it honestly. All of it follows from one discipline: *the
+context that finds a problem must never be the context that decides whether it is real.* That is
+hole 3, stated more strictly than the older rule "hand the review to a subagent". A fresh context
+no longer carries the prior "this is what I came up with", which already helps; this rule also
+forbids the finder to grade its own finding.
+
+task-spec keeps the half the loop deliberately leaves alone. Nothing is fixed inside Challenge or
+Verify; each phase routes what survived adjudication instead. A minor finding in Challenge goes
+back to Spec, a major one goes back to Explore, and anything that survives Verify sends the task
+back to Explore to start a new cycle. That routing is not a step of the review loop; it is the
+shape of task-spec's own two loops, and SKILL.md writes it out as a state table.
+
+The two fit together because a round has two halves, and the halves belong to different
+processes. If Challenge ran a full round, the loop would fix the plan itself, and task-spec would
+then route the very same finding back to Spec or Explore. The fix and the re-review would each
+happen twice, two contexts would both be editing the plan, and nothing would say which edit
+counts. A judge-only round removes that duplication: the gate decides what is real, and the phase
+that owns the plan decides what to do about it. The next round then judges the new state, so
+convergence is measured across the rounds of task-spec's inner loop rather than inside one round
+of the review loop.
+
+Two features of this mode decide what the routing actually receives. A finding is judged in four
+ways — valid, partially valid, invalid, or subsumed, meaning it is a symptom of a larger problem
+— and the finding list keeps only what survived: a valid finding as written, a partially valid
+or subsumed one as its rewrite, and an invalid one does not appear in the list at all. The
+adjudicator still produces counter-evidence for an "invalid" verdict, because that evidence is
+what earns the verdict, but nothing is acted on for such a finding, so no counter-evidence enters
+the list. And "partially valid" no longer hands back a **boundary** saying which part of the
+finding was overstated; it hands back a **re-description**, the finding rewritten so that
+everything left in it holds, and that rewrite is the finding from then on. A boundary tells the
+reader what was wrong with the finding, and the phase that receives it still has to work out the
+corrected version; the rewrite hands over the version that can be acted on. So Verify routes
+rewrites and never originals, and a finding already judged invalid never comes back to the
+routing. A "subsumed" finding is reported as its root for the same reason: sending the symptom
+alone to Spec or Explore would get the symptom patched.
+
+## Two things task-spec had to add for this to work
+
+Both additions answer the same problem: a judge-only round is a gate, and a gate that is told only
+what to check will report everything it notices.
+
+**The intentional-omissions list.** The Spec phase writes down what this change deliberately does
+not do, which alternatives were considered and rejected, and which details are deliberately left
+unwritten — "none" if there is nothing on it. The list is part of the standard rather than a note
+about the standard, and Challenge and Verify hand it to every finder. Without it a finder cannot
+tell a deliberate omission from a defect, so it reports each deliberate omission as a defect;
+those items are numerous, and each one looks like an obvious gap, so they bury the findings that
+matter. The list must also stay unchanged for the duration of a round: if it changes halfway, the
+verdicts already given lose the standard they were judged against.
+
+**The frozen copy.** Before a Challenge or Verify round starts, the spec file is that round's
+frozen copy. It already satisfies what the loop requires of a frozen object: the finders can read
+it because it sits inside the working tree, it can be compared before and after, and it can be
+rolled back. Two rules follow. Record a digest of the file before the round and check it again
+before the next round — if the file moved and task-spec's own routing did not move it, the round
+was judged against an object that changed underneath it, so freeze again and run the round again.
+And a spec that changed because the previous round rewrote it is normal: freeze the new state and
+record its new digest.
 
 ## Limitations (honest version)
 
@@ -103,5 +179,9 @@ noticeably differently.
 - **The process itself does not produce quality.** Run all five phases while shortchanging
   every one of them, and the result is still bad. This applies just the same to a human doing
   the review.
+- **The expensive half of the loop is paid twice.** Challenge and Verify each go through freeze,
+  partition, hunt, and independent adjudication. What a judge-only round saves is the
+  fix-and-re-review half, which task-spec would have had to run again through its own routing
+  anyway.
 - **The overhead is real.** Small tasks skip phases (every phase has a "trivial task"
   exemption), but non-trivial tasks cannot skip them.

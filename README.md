@@ -12,7 +12,7 @@ after acting, but includes anything whose correctness can't be self-evidenced.
 | Skill | When it runs | What it forces |
 |---|---|---|
 | [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced | Partition discovery away from judgement, fix only what survives review, then review the fixes until a round yields zero findings. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
 
 ## Why both
 
@@ -93,6 +93,12 @@ The outer loop (Execute → Verify → Explore) validates what came out after.
 The spec is a **binding contract**: Execute follows it, Verify judges by it.
 No spec reaches execution without surviving an adversarial challenge first.
 
+Challenge and Verify each run as a **judge-only round** of `adversarial-review-loop`.
+That skill supplies the method — freeze the object, partition the hunt, adjudicate
+every finding in a context that did not write what is being judged. task-spec keeps
+the routing, and keeps the rule that a review phase does not fix anything: the fix
+happens back in Spec or Explore, and the phase runs again on what comes back.
+
 [Read the skill →](./skills/engineering/task-spec/SKILL.md)
 · [Why it's built this way →](./docs/engineering/task-spec.md)
 
@@ -108,6 +114,11 @@ Built from measured runs, not theory. Two numbers from the field:
 
 Convergence on a real 24-file change: **8 → 3 → 3 → 2 → 0** findings across
 rounds of fix-then-re-review.
+
+Two modes. A **full round** fixes what survived and re-reviews the fixes until a
+round comes back empty. A **judge-only round** stops after adjudication and hands
+over the finding list — for when something else owns the fix and the re-entry,
+which is how `task-spec` runs it at its Challenge and Verify phases.
 
 The skill carries no project-specific procedure: where to partition, what counts
 as "correct", how to freeze the object — all decided by the agent applying it,

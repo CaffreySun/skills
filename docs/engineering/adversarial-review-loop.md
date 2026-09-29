@@ -32,8 +32,12 @@ This is the **only** reason every round of fixes has to be reviewed again. Revie
 change, fix everything the review turned up, stop — and all 16 stay in the working tree. Worse,
 they look perfectly normal, because nobody has looked a second time.
 
-So the stopping condition is not "the fixes are done". It is **a round of re-review that returns
-0 valid findings and 0 partially valid findings**.
+So the stopping condition is not "the fixes are done". It is **a round of re-review that comes
+back with no valid finding, no partially valid finding, and nothing subsumed by a larger
+problem**.
+
+That is the test for a full round. A judge-only round has no test of this kind, and does not need
+one: it fixes nothing, and it does not own the next round (see "Two modes", below).
 
 ### Number two: 8 of 14 findings were overturned or downgraded
 
@@ -63,6 +67,79 @@ Two things follow:
 
 That second point is why the loop keeps insisting on "go looking for the path that should have
 changed alongside this one", rather than handing out a checklist to tick through.
+
+## Two modes: the full round, and the round that only judges
+
+The loop runs in one of two modes, and what separates them is who owns the fix.
+
+A **full round** is steps 1 to 6: freeze the object, partition it and hunt in parallel, dedupe,
+adjudicate every finding, fix what the finding list carries, then re-review the fixes. Use it when
+this process is the only thing that will act on the findings, and therefore has to close its own
+loop.
+
+A **judge-only round** is steps 1 to 4, and then it stops: freeze, partition and hunt, dedupe,
+adjudicate. Nothing is fixed inside the round and nothing is re-reviewed inside it. What the round
+produces is its finding list, and some other process decides what happens to that list. Use it
+when the round sits inside a larger process that owns the fix and decides when to run the round
+again: that process fixes the problems, then runs this round again on the new state, so
+convergence is counted across those rounds rather than inside one.
+
+The second mode exists so that the fix and the re-review are not done twice. When a larger process
+is going to run the judge again after its own fix, the loop's own fix step would repeat work that
+process is doing anyway, and its own re-review would judge the same edit a second time.
+
+A judge-only round is not the cheap version. Steps 1 to 4 are where nearly all the cost sits. What
+it drops is the half that the process owning the fix was going to run again regardless.
+
+There is no count for a judge-only round to reach. The round is over once it has produced its
+finding list. That is why the stopping test in number one belongs to the full round alone.
+
+The Challenge and Verify phases of `task-spec` are built on this mode: each one judges a spec or a
+finished change, hands its finding list to the phase that owns the fix, and runs again on what
+comes back.
+
+## What an adjudicator may say, and what the finding list carries
+
+An adjudication used to end in one of three verdicts. There are now four: **valid**, **partially
+valid**, **invalid**, **subsumed**.
+
+**Subsumed** covers the case where the finding is real but is the symptom of a larger problem. The
+thing the finder pointed at is genuinely wrong — a missing check, a comment that no longer matches
+the code, a name that no longer matches the thing it names — but the problem worth fixing is the
+one that produced it. "Valid" would send someone to fix one symptom and leave the cause in place;
+"invalid" would dismiss something real. So under this verdict the adjudicator names the larger
+problem and gives its location, and the larger problem, not the symptom, is what the finding list
+carries.
+
+The **partially valid** verdict also changed what it hands back. It used to hand back a boundary: a
+statement of how far the finding held and where it stopped holding. It now hands back a
+**re-description** — the finding rewritten so that everything left in it is fully valid.
+
+The reason is that a boundary is a remark about a finding, while the fix has to be applied to a
+sentence. Given a remark, whoever does the fixing still has to write the corrected sentence, and
+there is nothing in the record to check it against. Given the corrected sentence, the fix is an
+ordinary edit. So the rewrite is the finding from that point on: for a partially valid finding it
+takes the place of the original text, for a subsumed finding it takes the place of the symptom.
+Nothing downstream goes back to the original wording.
+
+**An invalid verdict still has to be earned with counter-evidence.** The adjudicator has to go and
+look, and has to bring back the location and the exact text that shows the finding does not hold.
+That part does not change. What changed is where the counter-evidence stays: an invalid finding
+never enters the finding list, so its counter-evidence has no place in the list either. Nothing is
+acted on for an invalid finding, so nothing needs to be said about it there.
+
+So the finding list contains only what adjudication kept, and it has the same shape whether the
+round was a full round or a judge-only round:
+
+| Verdict | What the list carries |
+|---|---|
+| valid | the finding as the finder wrote it |
+| partially valid | the re-description, not the original |
+| subsumed | the larger problem, not the symptom |
+| invalid | nothing |
+
+Every line has already been cut down to the part that stands up, so fixing is a straight read of
+the list: no line has to be argued again before it can be acted on.
 
 ## Why the round is handed to a single subagent by default
 

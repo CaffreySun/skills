@@ -3,13 +3,14 @@ name: adversarial-review-loop
 description: >
   Closed-loop adversarial review: freeze the object → partition it and hunt for problems in parallel → dedupe →
   adjudicate every finding independently (anything needing judgement gets an agent of its own; mechanical checks
-  are batched, at most 4 per group; an "invalid" verdict must come with counter-evidence) → fix only what
-  survived → send the fixes back through review until a round yields neither a "valid" nor a "partially valid"
-  finding. The one core discipline: the context that finds a problem must never be the context that decides
-  whether it is real. Use it on any object whose correctness you cannot judge from the object itself, and where
-  missing a real problem costs far more than a false alarm. Trigger phrases: "review this carefully", "review
-  with subagents", "adjudicate the findings", "re-review after fixing", "make sure nothing was missed or wrongly
-  changed", "how many subagents should this take".
+  are batched, at most 4 per group; an "invalid" verdict must come with counter-evidence) → then either fix what
+  survived and send the fixes back through review until a round yields no "valid", no "partially valid" and no
+  "subsumed" finding, or — in judge-only mode — stop there and hand over the list of problems that survived.
+  The one core discipline: the context that finds a problem must never be the context that decides whether it is
+  real. Use it on any object whose correctness you cannot judge from the object itself, and where missing a real
+  problem costs far more than a false alarm. Trigger phrases: "review this carefully", "review with subagents",
+  "adjudicate the findings", "re-review after fixing", "review it but don't fix it", "make sure nothing was missed
+  or wrongly changed", "how many subagents should this take".
 ---
 
 # Closed-loop adversarial review
@@ -32,8 +33,8 @@ It also applies when the user says "review this carefully" or "re-review after f
 
 These three numbers explain why the process is shaped the way it is, and why none of its steps can be skipped:
 
-1. **Fixes introduce new problems of their own**: in measured runs, **16 of 51 fixes** introduced something new, or fixed one place and missed another — which is why every round of fixes has to go back through review.
-2. **Adjudication overturns a substantial share of findings**: roughly **1 in 5 to 1 in 3** findings ends up invalid or downgraded. What this step saves is not time; it is a batch of pointless edits.
+1. **Fixes introduce new problems of their own**: in measured runs, **16 of 51 fixes** introduced something new, or fixed one place and missed another — which is why, in a full round, every batch of fixes has to go back through review.
+2. **Adjudication overturns a substantial share of findings**: roughly **1 in 5 to 1 in 3** findings ends up invalid, downgraded, or re-described because it was really a symptom of something larger. What this step saves is not time; it is a batch of pointless edits.
 3. **It converges**: on a real project, the number of new problems each round found inside the previous round's fixes went **8 → 3 → 3 → 2 → 0**. The process is heavy, but it is not endless.
 
 The worst defects are usually not the ones you find by walking a checklist. They are the ones an adjudicator pulls out by asking a question nobody else asked: "this edit — which path that should have changed alongside it did it miss?"
@@ -45,13 +46,22 @@ flowchart LR
   A[1 Freeze the object] --> B[2 Partition, hunt for problems in parallel]
   B --> C[3 Dedupe]
   C --> D[4 Independent adjudication: judgement calls get their own agent, mechanical checks batched max 4 per group, no dispatch possible means two-pass]
+  D -->|judge-only round stops here| H[Stop: hand over the findings]
   D --> E[5 Fix only valid or partially valid]
   E --> F[6 Re-review the fixes: only this round's delta]
-  F -->|0 valid + 0 partially valid| G[Stop]
-  F -->|valid or partially valid again| B
+  F -->|0 valid + 0 partially valid + 0 subsumed| G[Stop]
+  F -->|anything survives again| B
 ```
 
 Before each round starts, **first confirm the object in your hands is identical to the frozen copy**; if it isn't, freeze it again and go back to step 1. Short of that, every round goes back to step 2, never to step 1.
+
+### The two modes
+
+**Full round** — steps 1 to 6, what the diagram draws. Use it when this process owns the fix, that is, when nothing else is going to act on the findings.
+
+**Judge-only round** — steps 1 to 4, then stop. Nothing is fixed and there is no re-review inside the round. What the round produces is **the list of problems that survived adjudication**, and what happens to that list is somebody else's job. Use it when this round is a gate inside a larger process that owns the fix and the re-entry: that process fixes, then runs this round again on the new state, so convergence is measured across those rounds rather than inside one. The "0 valid + 0 partially valid + 0 subsumed" rule in §8 is not this mode's exit condition — producing the finding list is.
+
+This is not the cheap mode. Steps 1 to 4 are the expensive part; what it drops is the half that was about to be done twice anyway.
 
 ## 4. Before you start: find out what this machine can actually do
 
@@ -110,7 +120,7 @@ Tasks at the same level go out all at once, with no overlap between them. Tasks 
 1. A `<critical>`-level hard constraint: **read-only** — don't modify the object, don't commit, don't run the full test suite or lint. Apart from writing its own artifact into the scratch directory you designate (see §5), it must not touch any other file in the working tree.
 2. What the object is + the acceptance criteria (spelling out what it is being judged against) + the intentional-omissions list.
 3. Every finding has to give: an identifier / **location** (where it sits in the object — line number, section number, item number, whichever suits the object) / **verbatim excerpt** / why this is a problem / **severity** / **minimal fix** / confidence. No empty phrases like "consider improving consistency".
-4. A fixed-format table: `# | Location | Severity | Excerpt | Problem | Minimal fix | Confidence` (severity means **how big the impact is**; name the three tiers yourself to suit the object, for example "must fix / should fix / optional" — when the object is a release artifact, the top tier is "blocks release"). This is a different thing from the three verdict tiers in §8; don't mix them up. Follow the table with an "items that could not be judged" section. **"No problems at all" is an allowed conclusion.**
+4. A fixed-format table: `# | Location | Severity | Excerpt | Problem | Minimal fix | Confidence` (severity means **how big the impact is**; name the three tiers yourself to suit the object, for example "must fix / should fix / optional" — when the object is a release artifact, the top tier is "blocks release"). This is a different thing from the four verdict tiers in §8; don't mix them up. Follow the table with an "items that could not be judged" section. **"No problems at all" is an allowed conclusion.**
 
 ### Partitioning principles
 
@@ -135,10 +145,10 @@ Whether a finding can be batched with others **depends on what has to be done to
 
 Judging several items one after another in the same context means each one gets coloured by the one before it. So fence each of them off:
 
-1. **Every item in the group gets its own verdict**: each one needs evidence / boundary / minimal fix / counter-evidence. **"Same as above" and "this whole category looks fine" are not allowed.**
+1. **Every item in the group gets its own verdict**: each one needs evidence / re-description / minimal fix / counter-evidence. **"Same as above" and "this whole category looks fine" are not allowed.**
 2. The task must say explicitly: **when judging one item, do not let the others in the group influence you**. The output order is fixed: **finish every verdict first, then write the group summary** — never the other way round.
 3. A group **must not contain two findings about the same place** (dedupe those into one first). And **shuffle the order of the items** — don't put same-category items with the same conclusion next to each other (adjacent placement invites copying one answer down the list).
-4. **Batching does not lower the bar**: every item judged in a batch carries **exactly the same** evidentiary requirements as one dispatched alone. "I'm judging several at once anyway" is never a reason to drop the evidence, the boundary, or the counter-evidence.
+4. **Batching does not lower the bar**: every item judged in a batch carries **exactly the same** evidentiary requirements as one dispatched alone. "I'm judging several at once anyway" is never a reason to drop the evidence, the re-description, or the counter-evidence.
 5. **Spot check**: if a group comes back saying "all valid, and not one of them was narrowed", pick the highest-risk item in that group and send it through adjudication again, alone.
 
 ### How many dispatches, and which kind of executor
@@ -164,25 +174,34 @@ When the same place is hit **independently** by 2–3 blocks, that is a sign of 
 
 | What | Content |
 |---|---|
-| Verdict | Valid / partially valid / invalid — these three tiers only |
+| Verdict | Valid / partially valid / invalid / subsumed — these four tiers only |
 | Evidence | What you looked up yourself: **location** + verbatim excerpt + **how to reproduce the check you made** (if it was a command, give the command so someone else can re-run it; if it was a reading comparison, give both locations and both texts) |
-| Boundary | Only when the verdict is "partially valid": the conditions under which it holds, and the conditions under which it doesn't (for example the location is right but the cause was misjudged, the impact was overstated, or it is long-standing rather than introduced this round) |
+| Re-description | Only when the verdict is "partially valid" or "subsumed". **Partially valid**: rewrite the finding so that what is left is fully valid — cut it down to the part that holds, and drop the part that was overstated or misdiagnosed. **Subsumed**: name the larger problem this is a symptom of, with a location for it. Either way, **the rewrite is the finding from here on** — the original text is not what gets acted on. |
 | Minimal fix | A version someone can edit straight in (for a replacement, write `old→new`; for an insertion, a deletion, or something a human has to decide, say where it goes, what comes out, and what the content is) + whatever else has to change along with it |
 | Counter-evidence | Only when the verdict is "invalid": **location** + verbatim excerpt |
 
-Adjudicators also frequently point out **which sentence in a finding overstated things** — **keep that remark in the report**, because it decides how much actually gets changed.
+The counter-evidence is what earns an "invalid" verdict, and the adjudicator does that work either way. It is **not** carried into the finding list — nothing gets acted on for an invalid finding, so nothing needs saying about it.
+
+**What is in the finding list.** This is the output a reader sees, and it is the same shape whether the round was full or judge-only:
+
+- **valid** → the finding as the finder wrote it.
+- **partially valid** → the re-description, not the original.
+- **subsumed** → the root problem, not the symptom.
+- **invalid** → nothing at all.
+
+So the list is problems that hold, each already cut down to the part that stands up. Every line in it can be acted on without re-litigating anything.
 
 ### Fix only what survived
 
-- **Fix only the "valid" and "partially valid" ones.** For a "partially valid" finding, follow the narrowed-down fix the adjudicator gave — do not fix the inflated version from the original finding. Multiple edits in the same file are made one after another in order (they cannot be parallel); different files can be edited at the same time. Prefer the ready-made fix the adjudicator supplied.
-- **Do not fix "invalid" findings**, but write plainly in the report **why you didn't**, with the counter-evidence attached — that both closes the loop and keeps the same question from being raised again next time.
+- **Fix everything that appears in the finding list.** For a "partially valid" finding, follow the rewrite the adjudicator gave — do not fix the inflated version from the original finding. For a "subsumed" one, fix the root problem, not the symptom. Multiple edits in the same file are made one after another in order (they cannot be parallel); different files can be edited at the same time. Prefer the ready-made fix the adjudicator supplied.
+- **Do not fix "invalid" findings.** They are not in the finding list either, so there is nothing to say about them beyond the adjudication record.
 - **Pre-existing errors**: if one happens to sit in a place you are editing, fix it while you are there; if it doesn't, log it as a carry-over item — **don't let it pass silently**. **Do not widen the scope while fixing** (rewriting the parser on the side, adding a mechanism on the side) — suggestions that widen scope like this often get overturned in adjudication.
 
 ### Re-review the fixes, and when you may stop
 
 Send **everything fixed this round** to review as a new batch: **send only this round's delta, never the whole object**. How you produce the delta depends on where the object lives — **first** compare last round's frozen copy against the current object item by item (this works with or without version control). If version control is in use and the baseline you hold genuinely represents what was frozen last round, you may also use `git diff <baseline>` (it compares the working tree, covering committed, staged, and unstaged parts; run `git add -N` for new files first, see §5 item 4). Either way, make sure the adjudicator can see the delta. Every other step is exactly as before.
 
-**You may stop when a re-review round comes back with "0 valid" and "0 partially valid"** (anything judged "partially valid" has to be fixed, using the narrowed-down version, before it counts as done).
+**In a full round you may stop when a re-review round comes back with "0 valid", "0 partially valid" and "0 subsumed"** (anything judged "partially valid" has to be fixed using its rewrite, and anything judged "subsumed" has to be fixed at the root, before it counts as done). A judge-only round has no such test — see §3.
 
 **Do not** substitute "the tests pass" or "the grep returns nothing" for this step — that is one check at closing time, and it is not an adversarial review. An adjudication **can overturn a previous round's verdict** (when new evidence turns up); **the new evidence wins**, and the report has to say plainly what was overturned.
 
@@ -210,7 +229,7 @@ rc="${st[0]}"; [ "${st[1]:-0}" -ge 2 ] && rc="${st[1]}"
 if [ "$rc" -eq 1 ]; then echo "(zero hits)"; elif [ "$rc" -ge 2 ]; then echo "(check command failed rc=$rc — not a zero-hit result)" >&2; exit "$rc"; fi
 ```
 
-**How long a reply may be**: any dispatched executor's reply is capped at 20 lines of **body text**. (Not counted against the 20: one line per row of the findings table; the full block for each adjudicated finding — verdict / evidence / boundary / minimal fix (including multi-line `old→new`) / counter-evidence — give all of them if there are many; items needing a user decision written out in full per the six parts of §9, with no limit on how many and all asked at once; the raw output of the closing check, which goes only in the final report.) What you are compressing is the concluding prose, not the things that have to come back. If the body genuinely cannot be compressed, write the process to disk and return only the conclusion and the path. **The report has to contain**: how many findings there were in total and how the verdicts break down; a row-by-row list `# | Finding | Verdict | Disposition` (with the reason / counter-evidence for anything invalid); if there were several rounds, a per-round summary `Round | Blocks | After dedupe | Adjudications | Verdict spread | Fixes`; the convergence path plus the final closing evidence; the raw output of the closing check; and carry-over items and items awaiting a user decision, written out per the six parts of §9.
+**How long a reply may be**: any dispatched executor's reply is capped at 20 lines of **body text**. (Not counted against the 20: one line per row of the findings table; the full block for each adjudicated finding — verdict / evidence / re-description / minimal fix (including multi-line `old→new`) — give all of them if there are many; items needing a user decision written out in full per the six parts of §9, with no limit on how many and all asked at once; the raw output of the closing check, which goes only in the final report.) What you are compressing is the concluding prose, not the things that have to come back. If the body genuinely cannot be compressed, write the process to disk and return only the conclusion and the path. **The report has to contain**: how many findings there were in total and how the verdicts break down; a row-by-row list `# | Finding | Verdict | Disposition` for what survived — invalid findings are counted in the verdict spread, not listed; if there were several rounds, a per-round summary `Round | Blocks | After dedupe | Adjudications | Verdict spread | Fixes`; the convergence path plus the final closing evidence; the raw output of the closing check; and carry-over items and items awaiting a user decision, written out per the six parts of §9.
 
 ## 11. Self-check before handing off, and pitfalls already hit
 
@@ -221,8 +240,9 @@ if [ "$rc" -eq 1 ]; then echo "(zero hits)"; elif [ "$rc" -ge 2 ]; then echo "(c
 - Did the ones needing judgement go out alone? Were the mechanical checks batched (max 4 per group), judged item by item within the group, with no "same as above"?
 - Does the executor type match how hard the task is (mechanical checking to an executor that only checks, judgement to one that is good at it)?
 - If the adjudication half (**including the extra spot-check dispatches**) clearly exceeded "block count × 2", did you go back and check for duplicate findings and for items misclassified as "takes judgement"? When a group came back "all valid, nothing narrowed", is there a spot-check record?
-- Does every "invalid" carry a location and counter-evidence? Does every "partially valid" state the conditions under which it holds, and a narrowed-down fix?
-- Is there a record of the fix-and-re-review rounds? In the round you stopped at, were "valid" and "partially valid" both 0? Did you paste **raw command output** at closing, rather than a line saying "checked and passed"?
+- Did each adjudicator hand back all five things (§8)? Did every "invalid" come with a location and counter-evidence, and every "partially valid" and every "subsumed" with a rewrite? **Is the finding list carrying only what survived** — no invalid finding, no counter-evidence?
+- **Full rounds**: is there a record of the fix-and-re-review rounds? In the round you stopped at, were "valid", "partially valid" and "subsumed" all 0? Did you paste **raw command output** at closing, rather than a line saying "checked and passed"?
+- **Judge-only rounds**: did the round stop after adjudication — nothing fixed, nothing re-reviewed — and was the finding list handed over intact?
 - If an orchestrator ran it, was its reply conclusions only? Does the findings table carry concrete fixes? Did it leave every file alone when it wasn't authorized to edit?
 - Do the items handed to the user carry "what was checked + the consequences of each option + my recommendation"? When nobody could be dispatched, does the report say plainly that "the two-pass method was used, with no independent-context adjudication"?
 

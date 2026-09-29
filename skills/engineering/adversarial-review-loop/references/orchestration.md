@@ -50,15 +50,15 @@ Process (you dispatch the subagents and get it done yourself; no need to report 
 1. Partition and find problems: decide how many blocks per main flow §6, dispatch the read-only finders in parallel, and keep the blocks non-overlapping.
    **Every finder's task must carry verbatim**: the <critical> read-only hard constraint, what the object is, the acceptance criteria, the intentional-omissions list, and the finding format (ID / location / verbatim excerpt / why / severity / minimal fix / confidence) plus the fixed table header (see `SKILL.md` §7).
 2. Deduplicate (where the same spot is hit by several blocks, or a fix is fully covered by another finding, merge them into one).
-3. Independent adjudication: dispatch the ones that need thinking separately; batch the mechanical checks together by category (≤4 per batch, and each item in a batch is judged independently); the adjudicators must be freshly dispatched (they cannot be the person who found it). They may rule invalid / partially valid; a ruling of invalid must give a location + counter-evidence from the verbatim text. **Spot-check**: if a batch comes back "all valid, nothing narrowed", pick its highest-risk item and dispatch it through adjudication again, on its own.
+3. Independent adjudication: dispatch the ones that need thinking separately; batch the mechanical checks together by category (≤4 per batch, and each item in a batch is judged independently); the adjudicators must be freshly dispatched (they cannot be the person who found it). They may rule invalid / partially valid / subsumed; a ruling of invalid must give a location + counter-evidence from the verbatim text, and a ruling of subsumed must name the larger problem and its location. **Spot-check**: if a batch comes back "all valid, nothing narrowed", pick its highest-risk item and dispatch it through adjudication again, on its own.
 4. Summarize.
 
 In your reply give only these (for length and item count see `SKILL.md` §10; exceeding them counts as failure):
-1. A one-sentence conclusion + how many verdicts of each kind (valid / partially valid / invalid).
+1. A one-sentence conclusion + how many verdicts of each kind (valid / partially valid / invalid / subsumed).
 2. The findings table: `# | location | verdict | one sentence stating the problem | minimal fix`.
 3. Items that need the user to decide — write them per the six elements in main flow §9; if there are none, write "none".
 4. How many people you dispatched in total (how many finders, how many adjudicators, plus any spot-check dispatches), confirm that no adjudicator is a finder, and record any batch that came back "all valid, nothing narrowed" together with the spot check you ran on it.
-5. For every item ruled valid / partially valid: the adjudication evidence (location + verbatim excerpt + **how that earlier check can be reproduced**: if it was a command, give the command; if you judged it by reading and comparing, list both locations and both verbatim excerpts) and the artifact path (so it can be read back on demand).
+5. For every item in the finding list (ruled valid, or ruled partially valid or subsumed and re-described): the adjudication evidence (location + verbatim excerpt + **how that earlier check can be reproduced**: if it was a command, give the command; if you judged it by reading and comparing, list both locations and both verbatim excerpts) and the artifact path (so it can be read back on demand).
 
 Not allowed: pasting back the raw output, the tables, or the report body of the finders and the adjudicators; pasting the full text of the object;
 **do not modify any object without authorization**.
@@ -78,7 +78,7 @@ Not allowed: pasting back the raw output, the tables, or the report body of the 
 ## Mode B: the lead agent orchestrates itself
 
 The lead agent itself walks §5 → §7 → §8 of `SKILL.md`: "freeze the object → partition and find problems → deduplicate → independent adjudication → fix →
-review the fixes". When to use it: the people you dispatch cannot dispatch further; or even where the problem is can only be located by repeated probing;
+review the fixes" — in a judge-only round, stop after adjudication. When to use it: the people you dispatch cannot dispatch further; or even where the problem is can only be located by repeated probing;
 or you need to confirm back and forth with the user while reviewing.
 
 Ways to save cost:
@@ -99,7 +99,7 @@ The goal is to preserve "**the person who finds problems ≠ the person who judg
 2. **You must swap context once in between**: empty out all the assumptions now in your head (start a new round of conversation / start a new session) and
    re-enter carrying only three things — the file path of that findings list, the object under review, and the acceptance criteria. **Never** keep writing
    with the first pass's conclusions still in memory.
-3. **The second pass only judges the problems**: go through each finding with the adjudication actions in `SKILL.md` §8, giving evidence / boundary /
+3. **The second pass only judges the problems**: go through each finding with the adjudication actions in `SKILL.md` §8, giving evidence / re-description /
    minimal fix / counter-evidence for each; a ruling of "invalid" must give a location + counter-evidence from the verbatim text. The order is fixed:
    **judge every finding first, then write the summary**.
 4. **Label it honestly**: the two-pass method can only count as **partial compensation** — the same person working in two passes still shares the same set

@@ -53,19 +53,19 @@ follow**.
 | Explore | critical info missing, cannot obtain | Terminate (report to user) |
 | Explore | trade-off decision needed, not covered by docs | Terminate (report to user) |
 | Spec | spec drafted | Challenge |
-| Challenge | spec passes quality gate | Execute |
-| Challenge | FAIL — minor defect (wording, detail, measurability) | Spec |
-| Challenge | FAIL — major defect (wrong direction, incomplete traversal, flawed assumption) | Explore |
+| Challenge | no surviving finding | Execute |
+| Challenge | surviving finding, minor (wording, detail, measurability) | Spec |
+| Challenge | surviving finding, major (wrong direction, incomplete traversal, flawed assumption) | Explore |
 | Execute | all steps complete | Verify |
 | Execute | hit something spec doesn't cover | Explore |
 | Execute | blocker exceeds capability/permission | Terminate (report to user) |
-| Verify | all acceptance criteria pass | Terminate (task complete) |
-| Verify | any criterion fails (after analysis) | Explore |
+| Verify | no surviving finding | Terminate (task complete) |
+| Verify | surviving finding (after analysis) | Explore |
 
 Inner loop (Explore → Spec → Challenge) inspects the plan before acting; may run
-multiple rounds. A Challenge failure routes to Spec (minor) or Explore (major).
-Outer loop (Execute → Verify → Explore) inspects results after acting; a Verify
-failure triggers a new full cycle.
+multiple rounds. A surviving minor finding routes to Spec, a surviving major one
+to Explore. Outer loop (Execute → Verify → Explore) inspects results after
+acting; a surviving finding at Verify triggers a new full cycle.
 
 Each loop narrows the problem.
 
@@ -121,6 +121,11 @@ ambiguity?**
 - Define acceptance criteria that are measurable — not "tests pass" but
   "`pnpm test` exit code 0, all 373 pass"
 - State reasoning: why this direction over alternatives considered in Explore
+- Write the **intentional-omissions list**: what this change deliberately does
+  not do, which alternatives were considered and rejected, which details are
+  deliberately left unwritten. Write "none" if there is nothing on it. Both
+  Challenge and Verify hand this list to every finder — without it, a finder
+  reports the things you deliberately left out as defects
 
 **MUST NOT**:
 - Produce vague specs ("fix the bug", "refactor the module")
@@ -133,7 +138,17 @@ ambiguity?**
 **Goal**: Adversarial review of the spec before execution. This is a quality
 gate, not a formality. You do not execute until the spec survives this phase.
 
-**The challenge must be concrete and adversarial.** Answer all five:
+**Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
+The object is the Spec body; the standard is the task request plus the full
+Explore output; the five questions below are what the blocks hunt over. Take its
+steps 1–4 — freeze the object, partition and hunt, dedupe, adjudicate every
+finding in a context that did not write the spec — and **stop there**. Steps 5–6
+are this skill's inner loop instead: nothing is fixed in Challenge, the routing
+below sends each finding to Spec or Explore, and this phase runs again on what
+comes back. Convergence is measured across those rounds, not inside one.
+
+**The challenge must be concrete and adversarial.** Every block's task carries
+all five, and the answers must be concrete:
 
 1. **Edge cases**: list at least 2. What happens with empty input? Concurrent
    calls? Already existing state? Partial failure? Scale (N=0, N=1, N=large)?
@@ -146,28 +161,32 @@ gate, not a formality. You do not execute until the spec survives this phase.
 5. **Traversal thoroughness**: was the solution space thoroughly explored
    during Explore? Are the eliminations defensible? Was any direction missed?
 
+**Give every finder the spec's intentional-omissions list** (see
+`references/spec-template.md`). Without it, a finder reports the things the spec
+deliberately left out, and that buries the real findings.
+
+**Severity vocabulary**: the finders' table carries a severity column, and here
+it takes exactly two values — **minor** (wording, detail, measurability) or
+**major** (wrong direction, incomplete traversal, flawed assumption) — because
+the routing below keys on it.
+
 **Trivial tasks**: the Challenge can be one line: "No edge cases. No assumptions
 beyond tool availability. No overengineering."
 
-**Subagent delegation**: for non-trivial tasks, SHOULD delegate Challenge to a
-subagent (task type `reviewer`). The subagent assignment MUST include: problem
-description, full Explore output, full Spec body, and the five adversarial
-questions above. The subagent answers the five questions. The parent then handles
-defect classification and routing.
+**Executor**: dispatch the blocks to judgement-capable subagents (task type
+`reviewer`). The read-only constraint, what each block's task must carry, and the
+shape of what it must return are all specified in the review loop's §5 and §7.
 
-**When defects are found (FAIL)**, apply analysis-first discipline:
+**Then route what survived adjudication**, by severity:
 
-1. **Classify each defect**:
-   - **Valid**: correct and actionable as stated
-   - **Partially valid**: real issue but wrong diagnosis or scope — treat the
-     valid core by its severity (minor/major)
-   - **Invalid**: doesn't apply — discard
-   - **Subsumed**: symptom of a larger problem — fix the root, not the symptom
-2. **Route**: minor defects (wording, detail, measurability) → Spec.
-   Major defects (wrong direction, incomplete traversal, flawed assumption) →
-   Explore. Mixed defects → major dominates.
-3. **Do NOT fix defects in Challenge** — return to Spec or Explore instead.
-   Challenge is a gate, not a repair shop.
+- minor → Spec
+- major → Explore
+- mixed → major dominates
+
+**Do NOT fix a problem in Challenge** — return to Spec or Explore instead.
+Challenge is a gate, not a repair shop. Do not re-score the adjudicator's
+verdicts either: in this process the verdict belongs to the context that did not
+find the problem.
 
 **Inner loop may run multiple rounds.** This is normal. Each round sharpens
 the spec.
@@ -176,6 +195,8 @@ the spec.
 - Pass with "looks fine" without listing what you checked
 - Notice a problem but stay silent to "get to execution faster"
 - Fix a problem yourself in Challenge rather than returning to Spec or Explore
+- Drop a finding because it fits neither the minor nor the major list — route it
+  by severity and let Spec or Explore decide what to do with it
 
 ---
 
@@ -202,27 +223,50 @@ the spec.
 
 ## Phase 5: Verify
 
-**Goal**: Confirm every acceptance criterion from the spec is met.
+**Goal**: Confirm every acceptance criterion is met — and that the change
+carried what it should have and disturbed nothing else.
 
-**Check each criterion from the spec against what you actually produced.**
-Give each a PASS/FAIL with evidence.
+**Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
+The object is what you produced together with the change that produced it; the
+standard is the acceptance criteria in the spec. Take its steps 1–4 — freeze the
+object, partition and hunt, dedupe, adjudicate every finding in a context that
+did not produce the work — and **stop there**. Steps 5–6 are this skill's outer
+loop: nothing is fixed in Verify, the routing below sends each finding to
+Explore, and this phase runs again on what comes back.
 
-- **All PASS** → task complete
-- **One or more FAIL** → analysis-first discipline:
-  1. **Classify each failure**: valid / partially valid / invalid / subsumed
-  2. Only after analysis, return to Explore with the confirmed deviations
-     as input for a new cycle
+**Checking the criteria is the mechanical half of the hunt.** That is what gets
+batched — at most 4 criteria per group, and a group must not contain two criteria
+about the same place. Each criterion gets its own PASS/FAIL with its own evidence,
+never "same as above".
 
-**Subagent delegation**: for non-trivial tasks, SHOULD delegate Verify to a
-subagent (task type `reviewer`). The subagent assignment MUST include: the
-spec body (with acceptance criteria) and the actual output to verify. The
-subagent checks each criterion and returns PASS/FAIL with evidence. The
-parent handles failure analysis and routing.
+**Then walk the change itself, not just the criteria.** The criteria can only ask
+about what the spec already thought of; ask the question they cannot: *this
+change — what should have moved with it and didn't, and what moved that
+shouldn't have?* Make this the **cross-cutting block** — the one whose job is to
+go after what the others missed and to check claims like "this has no impact".
+The change itself is that block's primary material. The criteria set what you may
+judge PASS or FAIL on, not what you may notice.
+
+**Give every block the spec's intentional-omissions list** (see
+`references/spec-template.md`), so nobody reports what the spec deliberately left
+out.
+
+- **Nothing survived adjudication** → task complete
+- **Anything survived** → return to Explore with the finding list as input for a
+  new cycle. The items are already classified, and anything "partially valid" or
+  "subsumed" has already been rewritten — route the rewrites, not the originals.
+
+**Executor**: dispatch the blocks to judgement-capable subagents (task type
+`reviewer`). The read-only constraint, what each block's task must carry, and the
+shape of what it must return are all specified in the review loop's §5 and §7.
 
 **MUST NOT**:
 - Claim PASS when a problem exists
 - Lower the standard to declare PASS
+- Report the criteria result alone and skip the walk
 - Fix the problem directly in Verify without going through Explore first
+- Re-score the adjudicator's verdicts — in this process the verdict belongs to
+  the context that did not produce the work
 
 ---
 
@@ -271,6 +315,22 @@ These are defaults. Override when the task calls for it.
 - **Recursively decomposed sub-tasks**: use `--` to connect parent and child slugs.
   E.g. `.task_spec/add-tag-stats--perf-optimize.md`
 
+### The frozen copy
+
+Before a Challenge or Verify round starts, the spec file **is** that round's frozen
+copy. It already satisfies what the review loop's §5 requires — subagents can read
+it because it lives inside the working tree, it can be compared before and after,
+and it can be rolled back. Two rules follow from treating it that way:
+
+- **Record a digest of the spec file before the round starts, and check it again
+  before the next round.** If it moved and this skill's own routing did not move
+  it, the round was run against something that changed underneath it — re-freeze
+  and run the round again.
+- **The spec changing because the loop rewrote it is normal**, not a violation.
+  Freeze again and record the new digest. The intentional-omissions list is part
+  of the frozen object: changing it mid-round invalidates the verdicts already
+  given.
+
 ### File structure: append cycles, never split
 
 One file per task-slug. Append each cycle to the same file — do not create new
@@ -302,7 +362,7 @@ File structure template: see `references/spec-template.md`.
 - **MUST NOT** create a todo list during Explore, Spec, or Challenge — the steps
   are not final until Challenge passes
 
-### Subagent delegation
+### Delegating a recursive sub-step
 
 Use a `task` subagent for a recursively decomposed sub-step when **all** of
 these hold:

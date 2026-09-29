@@ -9,7 +9,7 @@
 | Skill | 跑在什么时候 | 它强制的事 |
 |---|---|---|
 | [`task-spec`](./skills/engineering/task-spec/SKILL.md) | 动手之前 | 先探索方案空间，写出一份可检查的 spec，再让这份 spec 被对抗性挑战一轮——在碰任何一个文件之前。 |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | 正确性无法自证、漏检代价高于误报代价的任意对象 | 把「发现问题」和「判断问题是否成立」拆给不同角色，只修扛住复核的部分，然后连修复本身再审一轮，直到某轮零发现。对象是 diff、提案、迁移方案、契约都行，具体形态由应用时决定。 |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | 正确性无法自证、漏检代价高于误报代价的任意对象 | 把「发现问题」和「判断问题是否成立」拆给不同角色，每条发现都由没产出它的上下文裁决；完整回合修掉活下来的，再连修复本身复审，直到某轮什么都不剩，判断回合则停在清单交接。对象是 diff、提案、迁移方案、契约都行，具体形态由应用时决定。 |
 
 ## 为什么是这两个
 
@@ -80,10 +80,19 @@ Claude Code、Codex、Cursor、OpenCode 等 70+ 个。
 spec 是**不可偏离的契约**：执行只能照它做，审查只能拿它判。没有一份 spec 能跳过对抗
 性挑战直接进执行。
 
+挑战和审查这两个阶段，各自按 `adversarial-review-loop` 的**判断回合**跑。方法和步骤由
+那个技能提供——冻结对象、分区搜寻、每条发现都由没写过它的上下文裁决。路由仍归
+task-spec，「审查阶段不动手修」这条规矩也仍归 task-spec：修发生在定规或探索阶段，修完
+这个阶段再跑一遍。
+
 [读这个技能 →](./skills/engineering/task-spec/SKILL.md)
 · [为什么这样设计 →](./docs/engineering/task-spec.zh.md)
 
 ### adversarial-review-loop
+
+两种回合。**完整回合**修掉活下来的发现，再把修复送回去复审，直到某一轮什么都不剩。
+**判断回合**在裁决之后停下，把问题清单交出去，用在「修和再进入由别的流程负责」的场合
+——`task-spec` 的挑战和审查两个阶段就是这么用它的。
 
 来自实测数字，不是推理。三个来自真实项目的数字：
 
