@@ -93,6 +93,73 @@ if (!newest) {
   );
 }
 
+// The released headings are the version history, so they have to be a legal
+// sequence: from a.b.c the next version can only be a.b.(c+1), a.(b+1).0 or
+// (a+1).0.0. This reads nothing but the file, so it holds on any machine, and it
+// is what stops a version from jumping.
+const headings = [...changelog.matchAll(/^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})\s*$/gm)];
+
+// What "breaking" can mean for a skill. A major step has to name at least one of
+// these, so the number cannot be raised on a feeling.
+const BREAKING_FACTS = ["steps", "removed", "trigger", "depends"];
+
+const sectionBody = (i) => {
+  const from = headings[i].index;
+  const to = i + 1 < headings.length ? headings[i + 1].index : changelog.length;
+  return changelog.slice(from, to);
+};
+
+for (let i = 0; i < headings.length; i += 1) {
+  const ver = headings[i][1];
+  const body = sectionBody(i);
+  const declared = /\*\*Breaking:\*\*([^\u2014\n]*)/.exec(body);
+
+  let step = null;
+  if (i + 1 < headings.length) {
+    const a = ver.split(".").map(Number);
+    const b = headings[i + 1][1].split(".").map(Number);
+    step =
+      a[0] === b[0] && a[1] === b[1] && a[2] === b[2] + 1 ? "patch"
+      : a[0] === b[0] && a[1] === b[1] + 1 && a[2] === 0 ? "minor"
+      : a[0] === b[0] + 1 && a[1] === 0 && a[2] === 0 ? "major"
+      : null;
+    if (!step) {
+      problems.push(
+        `CHANGELOG.md: ${ver} does not follow ${headings[i + 1][1]} by a legal step`
+        + " -- from a.b.c the next can only be a.b.(c+1), a.(b+1).0 or (a+1).0.0",
+      );
+    }
+  }
+
+  if (step === "major") {
+    if (!declared) {
+      problems.push(
+        `CHANGELOG.md: ${ver} is a major step but carries no **Breaking:** line`
+        + ` -- name one or more of: ${BREAKING_FACTS.join(", ")}`,
+      );
+    } else {
+      const facts = declared[1].split(/[,\s]+/).filter(Boolean);
+      if (facts.length === 0) {
+        problems.push(`CHANGELOG.md: ${ver} has an empty **Breaking:** line`);
+      }
+      for (const fact of facts) {
+        if (!BREAKING_FACTS.includes(fact)) {
+          problems.push(
+            `CHANGELOG.md: ${ver} names an unknown breaking fact "${fact}"`
+            + ` -- use one or more of: ${BREAKING_FACTS.join(", ")}`,
+          );
+        }
+      }
+    }
+  } else if (declared) {
+    problems.push(
+      `CHANGELOG.md: ${ver} carries a **Breaking:** line but is`
+      + ` ${step ? `a ${step} step` : "not a legal major step"}`
+      + " -- a breaking change is a major step, not a note on a smaller one",
+    );
+  }
+}
+
 if (check && problems.length > 0) {
   for (const p of problems) console.error(`error: ${p}`);
   process.exit(1);
