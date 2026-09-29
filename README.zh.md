@@ -133,13 +133,22 @@ scripts/                         # 维护脚本
 
 ```bash
 npm run list     # 列出所有 SKILL.md
-npm run check    # 断言 plugin.json 与磁盘一致（CI 里用）
+npm run check    # 清单 + 版本号 + changelog 三者一致（CI 门禁用这个）
 ./scripts/link-skills.sh   # 把技能软链到 ~/.claude/skills 和 ~/.agents/skills
 ```
 
 已经占着位置的东西一律保留、绝不删除：实体目录会被移到 `.bak-<名字>-<时间戳>/`；
 软链则会把它指向的**实际内容**（而不是链接本身）复制到同一个位置。重复运行不会重复
 产生备份。
+
+## 发版
+
+发版走 PR。`main` 有保护：只能合并进去，而且 `check` 必须先通过；已发布的 tag 不能
+移动也不能删。
+
+这是故意的。`npx skills add CaffreySun/skills` 取的是 `main` 的尖端，根本不看版本号，
+所以落进 `main` 的提交在落地的那一刻就已经发出去了。要让版本号携带信息，`main` 就
+必须等于「已发布」。流程见 [`RELEASING.md`](./RELEASING.md)。
 
 ## 开源协议
 
