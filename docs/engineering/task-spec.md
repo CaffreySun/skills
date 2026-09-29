@@ -151,7 +151,7 @@ alone to Spec or Explore would get the symptom patched.
 Both additions answer the same problem: a judge-only round is a gate, and a gate that is told only
 what to check will report everything it notices.
 
-**The intentional-omissions list.** The Spec phase writes down what this change deliberately does
+**What this round does not do.** The Spec phase writes down what this change deliberately does
 not do, which alternatives were considered and rejected, and which details are deliberately left
 unwritten — "none" if there is nothing on it. The list is part of the standard rather than a note
 about the standard, and Challenge and Verify hand it to every finder. Without it a finder cannot

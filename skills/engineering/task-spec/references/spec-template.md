@@ -14,9 +14,10 @@ Four phases are recorded: Explore, Spec, Challenge, Verify.
 ### Spec
 <spec body: What / How / Verify criteria / reasoning>
 
-**Intentional omissions** — what this change deliberately does not do; alternatives
-considered and rejected; details deliberately left unwritten. Write "none" if there
-is nothing on it. Every finder in Challenge and Verify gets this list verbatim.
+**What this round does not do** — what this change deliberately leaves out;
+alternatives considered and rejected; details deliberately left unwritten. Write
+"none" if there is nothing on it. Every finder in Challenge and Verify gets this
+list verbatim.
 
 - <item>
 - <item>

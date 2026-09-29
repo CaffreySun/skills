@@ -121,8 +121,8 @@ ambiguity?**
 - Define acceptance criteria that are measurable — not "tests pass" but
   "`pnpm test` exit code 0, all 373 pass"
 - State reasoning: why this direction over alternatives considered in Explore
-- Write the **intentional-omissions list**: what this change deliberately does
-  not do, which alternatives were considered and rejected, which details are
+- Write down **what this round does not do**: what this change deliberately
+  leaves out, which alternatives were considered and rejected, which details are
   deliberately left unwritten. Write "none" if there is nothing on it. Both
   Challenge and Verify hand this list to every finder — without it, a finder
   reports the things you deliberately left out as defects
@@ -165,7 +165,7 @@ of these, and the answers must be concrete:
    Does every reference it makes still resolve? Does every claim it makes come
    with evidence?
 
-**Give every finder the spec's intentional-omissions list** (see
+**Give every finder what this round does not do** (see
 `references/spec-template.md`). Without it, a finder reports the things the spec
 deliberately left out, and that buries the real findings.
 
@@ -250,7 +250,7 @@ of the form "this has no impact" against evidence. The change itself is that
 half's primary material. The criteria set what you may judge PASS or FAIL on, not
 what you may notice.
 
-**Give the task the spec's intentional-omissions list** (see
+**Give the task what this round does not do** (see
 `references/spec-template.md`), so nobody reports what the spec deliberately left
 out.
 
@@ -325,9 +325,9 @@ It already satisfies what the review loop's §5 requires — subagents can read 
 because it lives inside the working tree, it can be compared before and after, and
 it can be rolled back — so there is no separate copy to make.
 
-One rule follows: **the intentional-omissions list is part of that object.** It
-states the standard the round judges against, and changing the standard mid-round
-invalidates the verdicts already given (the review loop's §1).
+One rule follows: **the list of what this round does not do is part of that
+object.** It states the standard the round judges against, and changing the
+standard mid-round invalidates the verdicts already given (the review loop's §1).
 
 ### File structure: append cycles, never split
 

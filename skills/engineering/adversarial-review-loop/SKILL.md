@@ -93,7 +93,7 @@ Alongside that, write these three things out **item by item**, and put them into
 
 1. **What the object is**: what this material is, and why it was done this way.
 2. **The acceptance criteria**: write down what this review is judging against. If it is an existing specification, convention, or higher-level document, name which one. If it was settled on the spot, write the text of those criteria here.
-3. **The intentional-omissions list** (required; write "none" if there is nothing on it; the common categories are below — add or drop them to suit the object). **Without this list, reviewers will report the things you deliberately left alone as defects** — that is the number one source of noise, and it buries the real findings:
+3. **What this round does not do** (required; write "none" if there is nothing on it; the common categories are below — add or drop them to suit the object). **Without this list, reviewers will report the things you deliberately left alone as defects** — that is the number one source of noise, and it buries the real findings:
    - Scope or level of detail already declared out of bounds: not doing X / Y / Z this round — must not be reported as an omission; the only reportable thing here is whether the consequences of not doing it were spelled out.
    - Implementation details deliberately left unwritten — must not be reported as defects.
    - Alternatives that were considered and rejected (the counter-argument for them) — these are not leftovers.
@@ -122,13 +122,13 @@ When you dispatch more than one task at the same level, **send them all at once*
 **Every dispatched task has to carry these**:
 
 1. A `<critical>`-level hard constraint: **read-only** — don't modify the object, don't commit, don't run the full test suite or lint. Apart from writing its own artifact into the scratch directory you designate (see §5), it must not touch any other file in the working tree.
-2. What the object is + the acceptance criteria (spelling out what it is being judged against) + the intentional-omissions list.
+2. What the object is + the acceptance criteria (spelling out what it is being judged against) + what this round does not do.
 3. Every finding has to give: an identifier / **location** (where it sits in the object — line number, section number, item number, whichever suits the object) / **verbatim excerpt** / why this is a problem / **severity** / **minimal fix** / confidence. No empty phrases like "consider improving consistency".
 4. A fixed-format table: `# | Location | Severity | Excerpt | Problem | Minimal fix | Confidence` (severity means **how big the impact is**; name the three tiers yourself to suit the object, for example "must fix / should fix / optional" — when the object is a release artifact, the top tier is "blocks release"). This is a different thing from the four verdict tiers in §8; don't mix them up. Follow the table with an "items that could not be judged" section. **"No problems at all" is an allowed conclusion.**
 
 ### When the whole round goes to one orchestrator
 
-If §4 put a subagent in charge of the round, its task carries everything above, plus the three things from §5 written out verbatim — what the object is, the acceptance criteria, and the intentional-omissions list. Tell it to get the material ready per §5 and to decide how much to split per §6. **Do not step it down below those bounds**; it decides inside them, and it decides from its own capability and the object.
+If §4 put a subagent in charge of the round, its task carries everything above, plus the three things from §5 written out verbatim — what the object is, the acceptance criteria, and what this round does not do. Tell it to get the material ready per §5 and to decide how much to split per §6. **Do not step it down below those bounds**; it decides inside them, and it decides from its own capability and the object.
 
 Its reply contains conclusions only:
 
@@ -232,7 +232,7 @@ if [ "$rc" -eq 1 ]; then echo "(zero hits)"; elif [ "$rc" -ge 2 ]; then echo "(c
 
 **Check each of these before you finish** (each one has to point at concrete evidence):
 
-- Does the dispatched task carry the "read-only" hard constraint? Does it carry the intentional-omissions list?
+- Does the dispatched task carry the "read-only" hard constraint? Does it carry what this round does not do?
 - Has every finding been adjudicated? Was the adjudicator someone other than the one who found it?
 - Did you use as few subagents as you could (§6)? Was adjudication one adjudicator judging the list, rather than one dispatch per finding?
 - Was every finding judged on its own evidence — no "same as above", and the summary written only after every verdict?
