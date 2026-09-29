@@ -10,6 +10,58 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.3.0] - 2026-09-29
+
+### Added
+
+- **`adversarial-review-loop` gets a way to tell a slow round from a stuck one.**
+  §2 asserted the loop converges and nothing in the skill could check it. §8 now
+  says what non-convergence looks like — findings landing on what the last round's
+  fixes touched, the same defect returning under a new name — and that the answer
+  is to stop and hand over the history, never to settle it yourself. Two rounds at
+  the same size are explicitly not evidence either way.
+- **A running record of the round.** One line per round, written as the rounds run,
+  with an identity line so a later round can tell whose history it is reading. It
+  holds verdicts and the edits made, never a snapshot of the object — §5 rules that
+  out, and the record says so where the two meet.
+- **The re-review's return shape.** A verdict per fix it was sent, what the fix
+  itself broke, and a non-blocking channel for what it noticed outside the delta.
+  Without the third the only way to stay inside the delta is to stay silent.
+- **A "set aside deliberately" section** in every finder's reply, alongside "items
+  that could not be judged". A silent drop and an empty area look identical from
+  the outside; only one of them is a judgement somebody has to own.
+- **`mandated by the standard`**, for a finding that holds while the standard itself
+  requires the thing it holds against. Such a finding stays on the list, does not
+  enter the fix set, and reaches the reader — the author of the standard does not
+  grade their own work.
+- **Waiting rules.** Don't poll with a short timeout, don't sit in one silent wait,
+  and reconcile what is still out: a seat that finished without reporting is one
+  that was paid for and not delivered.
+
+### Changed
+
+- **The round's fix set can now exclude the lowest severity tier**, if the object
+  declared one deferrable up front. Deferred is not dropped: it becomes a carry-over
+  item with its location and its ready-made fix, and the stop rule counts over the
+  set the round set out to fix, so a deferral cannot hold the loop open — or close
+  it early.
+- **A fix that keeps failing moves to a fresh fixer** after two passes, carrying a
+  statement of what was already tried. Not after one: the context that knows what it
+  chose is worth keeping until it has demonstrably stopped working.
+- **The author's account of why the object is the way it is** is now marked as the
+  author's account rather than folded into the standard the finders judge against.
+- **The report carries the decisions taken on the reader's behalf**, in order, each
+  with what it would have cost if wrong. A decision that never leaves the context
+  was a decision made in secret.
+
+### Fixed
+
+- **`task-spec` named a specific harness's tool and agent type** — a progress-tool
+  name in three places and an agent-type name in two. It now describes what it needs
+  and tells you to pick from your own tool list, which is what the rest of the skill
+  already does. Repository 1.2.0 -> 1.3.0; `adversarial-review-loop` 1.1.0 -> 1.2.0;
+  `task-spec` 1.0.0 -> 1.0.1.
+
 ## [1.2.0] - 2026-09-29
 
 ### Changed
