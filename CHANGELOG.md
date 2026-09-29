@@ -10,6 +10,34 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.1.3] - 2026-09-29
+
+### Fixed
+
+- **`adversarial-review-loop` told you not to do the thing it tells you to do.**
+  §4 says to hand the whole round to a subagent that can dispatch finders and an
+  adjudicator of its own, and calls that "the difference between this process being
+  usable and unusable". §11's list of pitfalls said the opposite — "having
+  subagents dispatch further subagents trips the nesting-depth limit and fails".
+  Reading both, an agent takes the pessimistic one and orchestrates the round
+  itself. Watched live in one session: the lead went straight to §4's second branch
+  on the strength of that sentence, and every role in the round went to a subagent
+  type that had no dispatch rights at all. §11 now separates the two failures that
+  were run together — being handed to a role that may not dispatch, and going one
+  level deeper than that — and §4 says to look up what the type is allowed to do
+  rather than assume it.
+
+### Changed
+
+- **The frozen copy is gone, not just the check on it.** The earlier pass removed
+  everything that fingerprinted the copy; what survived was the copy itself, kept
+  across rounds because §8 used "last round's copy" to build the next round's
+  delta. That reason does not hold: every fix in the finding list already arrives
+  as a ready-made `old→new` from adjudication, so the delta can be built from what
+  was changed rather than from a stored copy of the old state. §5 no longer asks
+  for a copy at all when the object is already a file the reviewers can read, and
+  §8 builds the delta from the recorded fixes.
+
 ## [1.1.2] - 2026-09-29
 
 ### Fixed
