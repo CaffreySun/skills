@@ -1,7 +1,8 @@
 name: check
 
-# This is the status check the `main` ruleset requires. If the job name changes,
-# update the ruleset too -- see RELEASING.md.
+# `check` is the status check the `main` ruleset requires, and the job that
+# `tag` waits for. If either job name changes, update the ruleset too -- see
+# RELEASING.md.
 on:
   pull_request:
   push:
@@ -12,7 +13,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The release check compares the branch against the commit it will
+          # land on, so it needs that commit in the clone.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
       - run: npm run check
+      - if: github.event_name == 'pull_request'
+        run: npm run check:release
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+
+  # main is the released state, so every commit that lands on it is a release
+  # and every release has a tag. Doing it here rather than by hand is what makes
+  # that true: the tag comes from the version in package.json, which the release
+  # check has already confirmed matches the changelog.
+  tag:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag this release
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists; nothing to do"
+            exit 0
+          fi
+          git tag -a "$tag" -m "$version"
+          git push origin "$tag"

@@ -1,15 +1,31 @@
 # Changelog
 
-All notable changes to this repository are documented here. The format is based
-on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); how a version number
-is chosen is in [RELEASING.md](./RELEASING.md).
+All notable changes to this repository are documented here. Every version in it is
+a commit on `main`, and every commit on `main` is one of these — see
+[RELEASING.md](./RELEASING.md) for how a version number is chosen. The format is
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 A version whose step up from the version below it is a major one carries a
 `**Breaking:**` line naming which of the four breaking facts applies.
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
-## [Unreleased]
+## [1.1.0] - 2026-09-29
+
+### Changed
+
+- **`main` is the released state, and nothing reaches it without being a release.**
+  CI compares every pull request against the commit it will land on: the version
+  has to move, the changelog has to have a dated section for the new version, and a
+  skill whose files changed has to carry that in its own version. That is
+  `npm run check:release`; it needs `BASE_REF` and passes without it, so `npm run
+  check` keeps working anywhere.
+- **CI tags every commit that lands on `main`.** After the check passes, a second
+  job reads the version out of `package.json` and pushes `vX.Y.Z`. Tagging by hand
+  is how the previous release missed its own tag and had to be moved.
+- **`[Unreleased]` is gone.** It only makes sense when changes accumulate on `main`
+  between releases, and now nothing does — a version is written when the change is
+  written, so it gets its dated section in the same pull request.
 
 ## [1.0.0] - 2026-09-29
 

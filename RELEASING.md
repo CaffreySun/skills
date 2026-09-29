@@ -1,19 +1,20 @@
 # Releasing
 
-`main` only moves through a pull request. A version is a tag on a commit that is
-already on `main`. Version numbers move at a release, and a release is a decision
-— so between releases `main` is ahead of the newest tag.
+`main` is the released state. Every commit on it is a release, every release has a
+tag, and no commit reaches it without one. Nothing accumulates on `main` waiting
+for a version number.
 
 This matters because of how the skill is installed:
 
 ```bash
-npx skills add CaffreySun/skills            # the tip of the default branch
-npx skills add CaffreySun/skills#v1.0.0     # a fixed tag
+npx skills add CaffreySun/skills            # the tip of main, which is a release
+npx skills add CaffreySun/skills#v1.0.0     # that exact release
 ```
 
 The first form does not read the version numbers at all — it clones `main` and
-takes what is there. So someone installing without a ref gets whatever has been
-merged, released or not. Pin a tag when you want a known state.
+takes what is there. That is only safe because `main` cannot be anything but
+released: an ordinary merge that skipped the version bump would hand every
+unpinned install a state that no version describes.
 
 ## One-time setup: protect the branch and the tags
 
@@ -101,9 +102,9 @@ merge commits, and keeping it that way is what makes `git log` readable.
 
 ## Choosing the version
 
-Versions move at a release, not on every pull request. A release can be one pull
-request or ten; what makes it a release is that the numbers and the changelog move
-with it and a tag goes on the merge commit.
+The version moves with every change that lands, because every change that lands
+is a release. Most steps are small because most changes are small; what keeps the
+number honest is the discipline, not the size of a step.
 
 From `a.b.c` the next version can only be `a.b.(c+1)`, `a.(b+1).0` or `(a+1).0.0`.
 `npm run check` enforces that, so a number cannot jump — you cannot go from `1.0.0`
@@ -145,43 +146,47 @@ version is a record for a reader.
 
 ## A release
 
-A release is a pull request that changes nothing but version numbers and the
-changelog, so that the commit it produces is exactly the released state.
+A release is an ordinary pull request. There is no separate release branch and no
+second step: what makes the merge a release is that it carries a version and a
+dated changelog section.
 
 1. **Branch.**
 
    ```bash
-   git switch -c release/x.y.z
+   git switch -c <branch>
    ```
 
-2. **Bump the four versions.** Root and plugin move together; the two skills
-   take whatever their own change warrants.
+2. **Make the change.** If it touches `skills/engineering/adversarial-review-loop/`,
+   bump that skill's version; the same for `task-spec`. `npm run check:release`
+   fails when a skill's files changed and its number did not.
+
+3. **Bump the repository version, and the plugin with it** — they move together:
 
    ```
    package.json                                        x.y.z
    .claude-plugin/plugin.json                          x.y.z
-   skills/engineering/adversarial-review-loop/package.json
-   skills/engineering/task-spec/package.json
    ```
 
-3. **Date the changelog.** Move the contents of `## [Unreleased]` under a new
-   `## [x.y.z] - YYYY-MM-DD`, and leave a fresh empty `## [Unreleased]` above it.
+4. **Add a dated changelog section** for the new version, describing the change
+   under the usual headings. A major step needs its `**Breaking:**` line. There is
+   no `[Unreleased]` section to move things out of — the version is written when
+   the change is written.
 
-   `npm run check` fails if `package.json`'s version and the changelog's newest
-   release disagree, so this step cannot be skipped quietly.
+5. **Open the pull request.** `check` runs `npm run check`, then compares the
+   branch against the commit it will land on and fails if the version did not move.
 
-4. **Open the pull request, wait for `check`, merge.**
+6. **Merge.** CI tags the merge commit `vX.Y.Z` and pushes the tag. You do not tag
+   by hand: the point is that no commit reaches `main` without a tag, and doing it
+   by hand is exactly how that gets missed.
 
-5. **Tag the merge commit and push the tag.**
+To see what CI will say before you push:
 
-   ```bash
-   git switch main && git pull
-   git tag -a vx.y.z -m "x.y.z — <one line>"
-   git push origin vx.y.z
-   ```
+```bash
+BASE_REF=origin/main npm run check:release
+```
 
-The tag is the release. Everything before it is ordinary development; everything
-after it is the next version.
+Without `BASE_REF` the script reports that it has nothing to compare against and
+passes, so plain `npm run check` keeps working anywhere.
 
 ## When the tag has to move
 
