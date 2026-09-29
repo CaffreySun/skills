@@ -35,6 +35,8 @@ Standard = the task request plus the Explore output.>
 - Overengineering: <at least 1>
 - Risk: <destructive? blast radius? rollback?>
 - Traversal: <solution space thoroughly covered? eliminations defensible?>
+- What should have moved with it: <what this change touches that the spec never
+  mentions; references that no longer resolve; claims without evidence>
 
 **Surviving findings** (the adjudicated list — write "none" if the round produced
 nothing; anything "partially valid" or "subsumed" appears as its rewrite):
@@ -52,8 +54,8 @@ plus the change that produced it. Standard = the acceptance criteria above.>
 
 - <criterion 1>: PASS / FAIL — <evidence>
 - <criterion 2>: PASS / FAIL — <evidence>
-- Walk over the change (the cross-cutting block): <what should have moved with it
-  and didn't, and what moved that shouldn't have>
+- Walk over the change: <what should have moved with it and didn't, and what moved
+  that shouldn't have>
 
 **Surviving findings**:
 

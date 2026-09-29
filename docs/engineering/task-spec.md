@@ -67,9 +67,9 @@ A single pass cannot correct itself. Pairing the phases into loops lets problems
   not that the last step went crooked.
 
 Where a finding goes from each state is this skill's own decision: it returns to the phase that
-can deal with it. How one gate round works inside — how the plan or the result is frozen, split
-up, and judged — is not decided here. That comes from the `adversarial-review-loop` skill, and a
-later section explains why the two fit together.
+can deal with it. How one gate round works inside — how the plan or the result is frozen, how
+problems are hunted, and who judges — is not decided here. That comes from the
+`adversarial-review-loop` skill, and a later section explains why the two fit together.
 
 Each loop narrows the problem, and at the same time accumulates an auditable record.
 
@@ -102,15 +102,15 @@ a careless execution.
 Reviewing your own work most likely ends with letting it pass — that is what hole 3 is about. So
 both gates are handed to the `adversarial-review-loop` skill: Challenge judges the plan, Verify
 judges the result. That skill has two modes. A **full round** runs its steps 1–6 — freeze the
-object, partition it and hunt in parallel, dedupe, adjudicate every finding independently, fix
-what survived, review the fixes. A **judge-only round** runs steps 1–4 and stops: nothing is
+object, hunt for problems, dedupe, adjudicate every finding independently, fix what survived,
+review the fixes. A **judge-only round** runs steps 1–4 and stops: nothing is
 fixed and nothing is re-reviewed inside the round, and what comes back is the finding list.
 task-spec uses the second mode.
 
-The loop supplies the method of one round: a frozen object every finder can read, a partition
-that covers the object without overlap, a hunt that may go past the checklist and ask "what
-should have moved with this change, and didn't?", and an adjudicator who did not write the
-finding and can therefore reject it honestly. All of it follows from one discipline: *the
+The loop supplies the method of one round: a frozen object every finder can read, a hunt
+that may go past the checklist and ask "what should have moved with this change, and
+didn't?", and an adjudicator who did not write the finding and can therefore reject it
+honestly. All of it follows from one discipline: *the
 context that finds a problem must never be the context that decides whether it is real.* That is
 hole 3, stated more strictly than the older rule "hand the review to a subagent". A fresh context
 no longer carries the prior "this is what I came up with", which already helps; this rule also
@@ -180,7 +180,7 @@ record its new digest.
   every one of them, and the result is still bad. This applies just the same to a human doing
   the review.
 - **The expensive half of the loop is paid twice.** Challenge and Verify each go through freeze,
-  partition, hunt, and independent adjudication. What a judge-only round saves is the
+  hunt, and independent adjudication. What a judge-only round saves is the
   fix-and-re-review half, which task-spec would have had to run again through its own routing
   anyway.
 - **The overhead is real.** Small tasks skip phases (every phase has a "trivial task"

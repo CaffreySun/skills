@@ -140,15 +140,15 @@ gate, not a formality. You do not execute until the spec survives this phase.
 
 **Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
 The object is the Spec body; the standard is the task request plus the full
-Explore output; the five questions below are what the blocks hunt over. Take its
-steps 1–4 — freeze the object, partition and hunt, dedupe, adjudicate every
-finding in a context that did not write the spec — and **stop there**. Steps 5–6
+Explore output; the items below are what the hunt looks for. Take its steps 1–4 —
+freeze the object, hunt for problems, dedupe, adjudicate every finding in a
+context that did not write the spec — and **stop there**. Steps 5–6
 are this skill's inner loop instead: nothing is fixed in Challenge, the routing
 below sends each finding to Spec or Explore, and this phase runs again on what
 comes back. Convergence is measured across those rounds, not inside one.
 
-**The challenge must be concrete and adversarial.** Every block's task carries
-all five, and the answers must be concrete:
+**The challenge must be concrete and adversarial.** One task carries every one
+of these, and the answers must be concrete:
 
 1. **Edge cases**: list at least 2. What happens with empty input? Concurrent
    calls? Already existing state? Partial failure? Scale (N=0, N=1, N=large)?
@@ -160,6 +160,10 @@ all five, and the answers must be concrete:
    rollback path?
 5. **Traversal thoroughness**: was the solution space thoroughly explored
    during Explore? Are the eliminations defensible? Was any direction missed?
+6. **What should have moved with it**: walk the spec itself, not just the five
+   questions above. What does this change touch that the spec never mentions?
+   Does every reference it makes still resolve? Does every claim it makes come
+   with evidence?
 
 **Give every finder the spec's intentional-omissions list** (see
 `references/spec-template.md`). Without it, a finder reports the things the spec
@@ -173,9 +177,9 @@ the routing below keys on it.
 **Trivial tasks**: the Challenge can be one line: "No edge cases. No assumptions
 beyond tool availability. No overengineering."
 
-**Executor**: dispatch the blocks to judgement-capable subagents (task type
-`reviewer`). The read-only constraint, what each block's task must carry, and the
-shape of what it must return are all specified in the review loop's §5 and §7.
+**Executor**: dispatch the hunt to a judgement-capable subagent (task type
+`reviewer`). The read-only constraint, what its task must carry, and the shape of
+what it must return are all specified in the review loop's §5 and §7.
 
 **Then route what survived adjudication**, by severity:
 
@@ -229,25 +233,24 @@ carried what it should have and disturbed nothing else.
 **Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
 The object is what you produced together with the change that produced it; the
 standard is the acceptance criteria in the spec. Take its steps 1–4 — freeze the
-object, partition and hunt, dedupe, adjudicate every finding in a context that
+object, hunt for problems, dedupe, adjudicate every finding in a context that
 did not produce the work — and **stop there**. Steps 5–6 are this skill's outer
 loop: nothing is fixed in Verify, the routing below sends each finding to
 Explore, and this phase runs again on what comes back.
 
-**Checking the criteria is the mechanical half of the hunt.** That is what gets
-batched — at most 4 criteria per group, and a group must not contain two criteria
-about the same place. Each criterion gets its own PASS/FAIL with its own evidence,
-never "same as above".
+**The hunt has two halves, and one task covers both.** First, every acceptance
+criterion gets its own PASS/FAIL with its own evidence — never "same as above",
+and never a summary standing in for the individual results.
 
 **Then walk the change itself, not just the criteria.** The criteria can only ask
 about what the spec already thought of; ask the question they cannot: *this
 change — what should have moved with it and didn't, and what moved that
-shouldn't have?* Make this the **cross-cutting block** — the one whose job is to
-go after what the others missed and to check claims like "this has no impact".
-The change itself is that block's primary material. The criteria set what you may
-judge PASS or FAIL on, not what you may notice.
+shouldn't have?* Go after what the criteria cannot reach, and check every claim
+of the form "this has no impact" against evidence. The change itself is that
+half's primary material. The criteria set what you may judge PASS or FAIL on, not
+what you may notice.
 
-**Give every block the spec's intentional-omissions list** (see
+**Give the task the spec's intentional-omissions list** (see
 `references/spec-template.md`), so nobody reports what the spec deliberately left
 out.
 
@@ -256,9 +259,9 @@ out.
   new cycle. The items are already classified, and anything "partially valid" or
   "subsumed" has already been rewritten — route the rewrites, not the originals.
 
-**Executor**: dispatch the blocks to judgement-capable subagents (task type
-`reviewer`). The read-only constraint, what each block's task must carry, and the
-shape of what it must return are all specified in the review loop's §5 and §7.
+**Executor**: dispatch the hunt to a judgement-capable subagent (task type
+`reviewer`). The read-only constraint, what its task must carry, and the shape of
+what it must return are all specified in the review loop's §5 and §7.
 
 **MUST NOT**:
 - Claim PASS when a problem exists

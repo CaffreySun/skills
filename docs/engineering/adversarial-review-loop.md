@@ -10,8 +10,9 @@
 
 **The context that finds a problem must never be the context that decides whether it is real.**
 
-Every part of the loop that looks fussy — partitioning, dedupe, item-by-item adjudication,
-re-reviewing the fixes — falls out of that one sentence. If you remember one thing, remember this.
+Every part of the loop that looks fussy — dedupe, adjudicating the whole list in a context that
+did not find it, re-reviewing the fixes — falls out of that one sentence. If you remember one
+thing, remember this.
 
 Why is it so load-bearing? Because when one context does two things in a row, the second is
 anchored by the first. A context that has just found "there is a problem here" is almost
@@ -41,7 +42,7 @@ one: it fixes nothing, and it does not own the next round (see "Two modes", belo
 
 ### Number two: 8 of 14 findings were overturned or downgraded
 
-> In one 11-file specification rewrite: 5 partitioned finders → 14 findings → 14 independent
+> In one 11-file specification rewrite: 5 finders → 14 findings → 14 independent
 > adjudicators → 1 ruled invalid, 7 downgraded to "partially valid".
 
 Roughly **1 in 5 to 1 in 3** findings ends up invalid or downgraded. This is the reason the
@@ -72,13 +73,13 @@ changed alongside this one", rather than handing out a checklist to tick through
 
 The loop runs in one of two modes, and what separates them is who owns the fix.
 
-A **full round** is steps 1 to 6: freeze the object, partition it and hunt in parallel, dedupe,
-adjudicate every finding, fix what the finding list carries, then re-review the fixes. Use it when
-this process is the only thing that will act on the findings, and therefore has to close its own
-loop.
+A **full round** is steps 1 to 6: freeze the object, hunt for problems, dedupe, adjudicate every
+finding in a context that did not find it, fix what the finding list carries, then re-review the
+fixes. Use it when this process is the only thing that will act on the findings, and therefore has
+to close its own loop.
 
-A **judge-only round** is steps 1 to 4, and then it stops: freeze, partition and hunt, dedupe,
-adjudicate. Nothing is fixed inside the round and nothing is re-reviewed inside it. What the round
+A **judge-only round** is steps 1 to 4, and then it stops: freeze, hunt, dedupe, adjudicate.
+Nothing is fixed inside the round and nothing is re-reviewed inside it. What the round
 produces is its finding list, and some other process decides what happens to that list. Use it
 when the round sits inside a larger process that owns the fix and decides when to run the round
 again: that process fixes the problems, then runs this round again on the new state, so
@@ -149,51 +150,56 @@ process is too heavy" actually comes from — not from the number of subagents, 
 their output landing in the main context**.
 
 Hand it over, and the lead agent pays only "one dispatch + one final set of conclusions"; everything
-else stays in the orchestrator's own context.
+else stays in the orchestrator's own context. The subagent taking it on has to be one that can
+hand out tasks of its own.
+
+That is the first of four branches, and the one to reach for when it is available (§4 of SKILL.md):
+
+1. **Your subagents can dispatch** → hand the whole round to one of them, as above.
+2. **You can dispatch, but your subagents cannot dispatch further** → orchestrate the round
+   yourself, but still hand out as much of the work as you can. What you must not do is read every
+   part of the object yourself.
+3. **You cannot dispatch, but you can open a new session that has dispatch tools of its own**
+   (non-interactive is fine) → that session is the orchestrator, and the separation comes out the
+   same.
+4. **Neither** → do it yourself in two passes, and say so plainly in the report: the two passes
+   share priors, so this is a partial compensation, not a substitute (see the limits below).
+
+How much to split, how many to dispatch, which executor to use — those are the orchestrator's own
+decisions, bounded by §6 and §7 of SKILL.md, and made from its own capability and the object.
 
 The cost is losing your direct feel for whether a finding has been overstated. The compensation
 is a hard rule: every conclusion must spell out the concrete `old→new` edit. Shown the
 specific change, the lead agent can tell at a glance whether the finding was inflated,
 without going back to re-gather the evidence.
 
-## Why batching is safe (and where the boundary is)
+## Why one adjudicator judges the whole list
 
+The expensive shape is not "one adjudicator, many findings"; it is **one adjudicator per finding**.
 Every subagent carries a **fixed overhead that has nothing to do with the task**: system prompt,
-tool definitions, skill list — on the order of several thousand tokens. N subagents cost roughly
-N × that fixed overhead, plus all the content.
+tool definitions, skill list — on the order of several thousand tokens. Fifteen findings
+dispatched separately means paying that overhead fifteen times, when only a few of them usually
+need independent judgement.
 
-So "one subagent per finding" is the most expensive shape there is. Fifteen findings dispatched
-separately means fifteen fixed overheads, when only 3–5 of them usually need independent
-judgement.
+So the default is **one adjudicator judging the whole list**. Split the list only when it is
+genuinely too large for one context to hold — the same bound that governs splitting a hunt
+(§6 of SKILL.md).
 
-**Batching is what saves that overhead.** But batching has a precondition: only batch the
-**mechanical checks** — verdicts like "is this line really written that way" and "does this word
-still appear anywhere", which do not depend on semantic judgement.
+The risk is real, and known: **a context that judges several findings in a row is anchored by the
+one before it.** Read the first, decide it, and the second is read in the shadow of that decision.
+Left alone, the list drifts toward one repeated answer — the exact error independent adjudication
+exists to prevent. The answer is to fence each finding off inside the task, not to cut the list
+into one dispatch per finding:
 
-The three-axis test (any "yes" means dispatch it on its own):
-
-| Axis | What it asks |
-|---|---|
-| **Judgement** | Does the verdict depend on a semantic conflict, self-consistency, a real gap, ambiguity, or a trade-off? Or is it enough to check mechanically? |
-| **Cost of getting it wrong** | Would the verdict change behaviour, a contract, an external commitment, or the meaning of a process — or be irreversible? |
-| **Contested ground** | Was this item already overturned or downgraded in a previous round? |
-
-When you cannot judge, dispatch it on its own. Paying a little more is better than letting a
-contested item through.
-
-The hard rules for batching (leave them out of the task text and batching degrades into
-self-contamination):
-
-1. Every item in the batch gets its own verdict — **"same as above" and "this whole category is
-   valid" are forbidden**;
-2. State explicitly that the verdict on this item must not be influenced by the verdicts on the
-   others in the batch;
-3. Fixed output order: **every verdict first, then the batch summary** — never the reverse;
-4. The batch contains no two findings about the same place (dedupe those first);
-5. Order the items by file, or shuffle them — do not put same-category, same-conclusion items
-   next to each other, because adjacency invites rubber-stamping;
-6. **Spot check**: if a batch comes back saying "all valid and not one narrowed", pick its
-   highest-risk item and send it through adjudication again on its own.
+1. **Every finding gets its own verdict**, with its own evidence, re-description, minimal fix and
+   counter-evidence — **"same as above" and "this whole category looks fine" are forbidden**;
+2. Say explicitly that **the verdicts on the other findings must not influence this one**;
+3. Fixed output order: **every verdict first, then the summary** — never the reverse;
+4. **No two findings about the same place side by side** (dedupe those first), and order or
+   shuffle the list so that same-category, same-conclusion items are not adjacent, because
+   adjacency invites one answer being copied down the list;
+5. **Being one of many never lowers the bar.** Every finding carries exactly the same evidentiary
+   requirements it would carry if it were judged on its own.
 
 ## Why you have to prove "only a human can settle this" before asking one
 
@@ -215,17 +221,19 @@ answer in one sentence".
 
 ## Limits (the honest version)
 
-- **It really does cost.** A full round dispatches a dozen-odd subagents. When the object has
-  only one or two reviewable sides, or right and wrong are plain at a glance, do not run it —
-  step down by the principle in section 6 of SKILL.md, not by a fixed tier.
+- **It really does cost.** A full round is two subagents by default — one finder and one
+  adjudicator. It only grows when the object is genuinely too big for one context to hold, and
+  then you split as little as you can. When the object has only one or two reviewable sides, or
+  right and wrong are plain at a glance, do not run it — step down by the principle in section 6
+  of SKILL.md, not by a fixed tier.
 - **On a harness with no dispatch capability it is only a partial compensation.** The "two-pass
   method" (one executor, two passes) preserves the *form* of "finder ≠ judge", but the two passes
   still share priors, so it cannot be claimed as equivalent to independent adjudication. The
   report has to say so plainly.
 - **It depends on a standard for "what counts as correct", and that standard has to be settled
   before review starts.** The standard can be ready-made (a specification, a convention, a
-  higher-level document) or set on the spot; but if no standard can be settled for this change at
-  all, the adjudicator has nothing to gather evidence against, and the process degrades into an
-  argument of opinions.
+  higher-level document) or written down just before the review starts; but if no standard can be
+  settled for this change at all, the adjudicator has nothing to gather evidence against, and the
+  process degrades into an argument of opinions.
 - **It cannot make the model smarter.** All it does is make "ship it without adjudication"
   mechanically harder to do.
