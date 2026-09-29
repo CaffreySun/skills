@@ -40,6 +40,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Tag this release
         run: |
+          # A runner has no git identity, and an annotated tag needs one.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           version="$(node -p "require('./package.json').version")"
           tag="v$version"
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then

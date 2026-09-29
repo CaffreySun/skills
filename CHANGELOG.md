@@ -10,6 +10,16 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.1.1] - 2026-09-29
+
+### Fixed
+
+- **The tag job could not create the tag.** A GitHub runner has no git identity,
+  and `git tag -a` needs one, so the first run of the new tagging step failed with
+  `Committer identity unknown` and exit 128 — leaving the release it was supposed
+  to tag without a tag. The job now sets `github-actions[bot]` as the committer
+  first.
+
 ## [1.1.0] - 2026-09-29
 
 ### Changed
