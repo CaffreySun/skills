@@ -15,11 +15,11 @@ did not find it, re-reviewing the fixes — falls out of that one sentence. If y
 thing, remember this.
 
 Why is it so load-bearing? Because when one context does two things in a row, the second is
-anchored by the first. A context that has just found "there is a problem here" is almost
+influenced by the first. A context that has just found "there is a problem here" is almost
 incapable of honestly rejecting it when asked "does this problem hold?" — it has just spent the
 effort finding it. That is not bad faith; it is what a context does.
 
-## Three numbers fix the shape of the loop
+## Three numbers explain why the loop is built the way it is
 
 All three come from projects that actually ran, not from reasoning. The loop looks the way it
 does in order to answer them.
@@ -34,7 +34,7 @@ change, fix everything the review turned up, stop — and all 16 stay in the wor
 they look perfectly normal, because nobody has looked a second time.
 
 So the stopping condition is not "the fixes are done". It is **a round of re-review that comes
-back with no valid finding, no partially valid finding, and nothing subsumed by a larger
+back with no valid finding, no partially valid finding, and nothing that is only part of a larger
 problem**.
 
 That is the test for a full round. A judge-only round has no test of this kind, and does not need
@@ -103,14 +103,16 @@ comes back.
 ## What an adjudicator may say, and what the finding list carries
 
 An adjudication used to end in one of three verdicts. There are now four: **valid**, **partially
-valid**, **invalid**, **subsumed**.
+valid**, **invalid**, **part of a larger problem**.
 
-**Subsumed** covers the case where the finding is real but is the symptom of a larger problem. The
+**Part of a larger problem** covers the case where the finding is real but is only one instance of
+a larger problem.
+The
 thing the finder pointed at is genuinely wrong — a missing check, a comment that no longer matches
 the code, a name that no longer matches the thing it names — but the problem worth fixing is the
-one that produced it. "Valid" would send someone to fix one symptom and leave the cause in place;
+one that produced it. "Valid" would send someone to fix that one place and leave the cause in place;
 "invalid" would dismiss something real. So under this verdict the adjudicator names the larger
-problem and gives its location, and the larger problem, not the symptom, is what the finding list
+problem and gives its location, and the larger problem, not the one instance, is what the finding list
 carries.
 
 The **partially valid** verdict also changed what it hands back. It used to hand back a boundary: a
@@ -121,7 +123,8 @@ The reason is that a boundary is a remark about a finding, while the fix has to 
 sentence. Given a remark, whoever does the fixing still has to write the corrected sentence, and
 there is nothing in the record to check it against. Given the corrected sentence, the fix is an
 ordinary edit. So the rewrite is the finding from that point on: for a partially valid finding it
-takes the place of the original text, for a subsumed finding it takes the place of the symptom.
+takes the place of the original text, for a finding that is only part of a larger problem it takes
+the place of the instance just described.
 Nothing downstream goes back to the original wording.
 
 **An invalid verdict still has to be earned with counter-evidence.** The adjudicator has to go and
@@ -130,23 +133,23 @@ That part does not change. What changed is where the counter-evidence stays: an 
 never enters the finding list, so its counter-evidence has no place in the list either. Nothing is
 acted on for an invalid finding, so nothing needs to be said about it there.
 
-So the finding list contains only what adjudication kept, and it has the same shape whether the
+So the finding list contains only what adjudication kept, and it has the same form whether the
 round was a full round or a judge-only round:
 
 | Verdict | What the list carries |
 |---|---|
 | valid | the finding as the finder wrote it |
 | partially valid | the re-description, not the original |
-| subsumed | the larger problem, not the symptom |
+| part of a larger problem | the larger problem, not the one instance |
 | invalid | nothing |
 
-Every line has already been cut down to the part that stands up, so fixing is a straight read of
+Every line has already been reduced to the part that holds up, so fixing is a straight read of
 the list: no line has to be argued again before it can be acted on.
 
 ## Why the round is handed to a single subagent by default
 
 If the lead agent runs the whole loop itself, the output of every finder and every adjudicator
-lands in the lead context and piles up round after round. That is where the complaint "this
+lands in the lead context and accumulates round after round. That is where the complaint "this
 process is too heavy" actually comes from — not from the number of subagents, but from **all
 their output landing in the main context**.
 
@@ -169,14 +172,14 @@ That is the first of four branches, and the one to reach for when it is availabl
 How much to split, how many to dispatch, which executor to use — those are the orchestrator's own
 decisions, bounded by §6 and §7 of SKILL.md, and made from its own capability and the object.
 
-The cost is losing your direct feel for whether a finding has been overstated. The compensation
+The cost is losing your own direct judgement of whether a finding has been overstated. The compensation
 is a hard rule: every conclusion must spell out the concrete `old→new` edit. Shown the
-specific change, the lead agent can tell at a glance whether the finding was inflated,
+specific change, the lead agent can tell at a glance whether the finding was overstated,
 without going back to re-gather the evidence.
 
 ## Why one adjudicator judges the whole list
 
-The expensive shape is not "one adjudicator, many findings"; it is **one adjudicator per finding**.
+The expensive case is not "one adjudicator, many findings"; it is **one adjudicator per finding**.
 Every subagent carries a **fixed overhead that has nothing to do with the task**: system prompt,
 tool definitions, skill list — on the order of several thousand tokens. Fifteen findings
 dispatched separately means paying that overhead fifteen times, when only a few of them usually
@@ -186,10 +189,10 @@ So the default is **one adjudicator judging the whole list**. Split the list onl
 genuinely too large for one context to hold — the same bound that governs splitting a hunt
 (§6 of SKILL.md).
 
-The risk is real, and known: **a context that judges several findings in a row is anchored by the
-one before it.** Read the first, decide it, and the second is read in the shadow of that decision.
-Left alone, the list drifts toward one repeated answer — the exact error independent adjudication
-exists to prevent. The answer is to fence each finding off inside the task, not to cut the list
+The risk is real, and known: **a context that judges several findings in a row is influenced by the
+one before it.** Read the first, decide it, and the second is read already leaning toward that
+decision. Left alone, the list settles on one repeated answer — the exact error independent adjudication
+exists to prevent. The answer is to keep each finding separate from the others inside the task, not to cut the list
 into one dispatch per finding:
 
 1. **Every finding gets its own verdict**, with its own evidence, re-description, minimal fix and

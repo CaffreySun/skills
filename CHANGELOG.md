@@ -10,6 +10,41 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.4.0] - 2026-09-30
+
+### Changed
+
+- **The fourth adjudication verdict is renamed: `subsumed` → `part of a larger problem`**
+  (Chinese 「更大问题的一部分」). The old name was a Latinism that read as jargon and
+  carried no meaning on its own; the new one states the definition — the finding is
+  real, but it is one instance of a larger problem, and the larger problem is what
+  gets fixed. The four tiers are unchanged in number and in meaning: `valid` /
+  `partially valid` / `invalid` / `part of a larger problem`. Every file that names
+  the verdicts follows: both SKILL.md files, both spec templates, both READMEs and
+  both rationale docs. The one place `subsumed` survives is the historical entry
+  below, annotated with the current name.
+- **`task-spec`'s Explore measures whether the direction was chosen, not how many
+  options it listed.** The old requirement — the first direction *and at least one
+  alternative* — was a quota, and a quota is payable in filler: one correct option
+  and one obviously worse one, then "more complex, therefore rejected." That record
+  satisfies every letter of the rule and carries no information, because the
+  rejected option had no advantage over the chosen one and could never have been
+  picked. Many tasks also have one direction only, where a second option is a
+  manufactured choice. Explore now accepts two shapes of record — a real trade-off,
+  where each rejected direction names what it did better and the criterion that
+  decided, or a one-directional space, naming the constraint and what would have to
+  change — under one test: an alternative you cannot name an advantage for is not an
+  alternative. Challenge asks the same question instead of "was any direction
+  missed", which pushed finders toward counting too.
+- **Metaphors replaced with plain language throughout**, Chinese and English alike.
+  The model's "four holes" are "four flaws"; the "internal compass" is a standard for
+  judging which is better; "quality gradient" is judging quality; and the anchors,
+  shadows, drifts, sinking, drowning, pile-ups, blast radiuses, repair shops and
+  seats you paid for are all gone. A metaphor is kept only where it carries an
+  explanation plain wording does not — the spec as a *binding contract*, the two
+  *loops*, the *gate* a review phase runs as. No version number moved in that pass,
+  and no wording change altered what any instruction says.
+
 ## [1.3.0] - 2026-09-29
 
 ### Added
@@ -24,7 +59,7 @@ step has no such line, or if a minor or patch step carries one anyway.
   with an identity line so a later round can tell whose history it is reading. It
   holds verdicts and the edits made, never a snapshot of the object — §5 rules that
   out, and the record says so where the two meet.
-- **The re-review's return shape.** A verdict per fix it was sent, what the fix
+- **What the re-review returns.** A verdict per fix it was sent, what the fix
   itself broke, and a non-blocking channel for what it noticed outside the delta.
   Without the third the only way to stay inside the delta is to stay silent.
 - **A "set aside deliberately" section** in every finder's reply, alongside "items
@@ -35,8 +70,8 @@ step has no such line, or if a minor or patch step carries one anyway.
   enter the fix set, and reaches the reader — the author of the standard does not
   grade their own work.
 - **Waiting rules.** Don't poll with a short timeout, don't sit in one silent wait,
-  and reconcile what is still out: a seat that finished without reporting is one
-  that was paid for and not delivered.
+  and reconcile what is still out: a dispatched task that finished without reporting
+  is one you never got a result from.
 
 ### Changed
 
@@ -177,7 +212,8 @@ they are; they are superseded, not withdrawn.
     finding list for whichever process owns the fix. `task-spec` runs its two
     review phases this way.
   - Verdicts went from three tiers to four — `valid` / `partially valid` /
-    `invalid` / `subsumed`. A "partially valid" finding now comes back as a
+    `invalid` / `subsumed` (the fourth is now named "part of a larger problem").
+    A "partially valid" finding now comes back as a
     **re-description**, the finding rewritten so that everything left in it holds,
     rather than as a boundary saying which part was overstated. A boundary is a
     remark about a finding, and a fix applies to a sentence.
@@ -210,7 +246,7 @@ they are; they are superseded, not withdrawn.
 - `task-spec` now requires a **list of what this round does not do** as a Spec
   output, and hands that list to every finder in Challenge and Verify. Without it
   a finder reports each deliberate omission as a defect, and those items are
-  numerous and each one looks like an obvious gap, so they bury the findings that
+  numerous and each one looks like an obvious gap, so they hide the findings that
   matter.
 - `task-spec` gained an **object-of-a-round** convention: the spec file is already
   the round's object, so there is no separate copy to make.
