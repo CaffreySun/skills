@@ -67,17 +67,30 @@ multiple rounds. A surviving minor finding routes to Spec, a surviving major one
 to Explore. Outer loop (Execute → Verify → Explore) inspects results after
 acting; a surviving finding at Verify triggers a new full cycle.
 
-Each loop narrows the problem.
+Each loop reduces what is left undecided.
 
 ---
 
 ## Phase 1: Explore
 
 **Goal**: Understand the problem and traverse the solution space before committing
-to a direction. Do not produce a spec yet — produce a map.
+to a direction. Do not produce a spec yet — produce an overview of the space and what is in it.
 
-**Output**: problem understanding, directions considered, directions eliminated
-and the reasons for elimination.
+**Output**: problem understanding, and evidence that the direction was **chosen,
+not defaulted**. Two cases — record whichever one holds:
+
+- **Real choice**: two or more directions a reasonable engineer could have
+  picked. For each eliminated one, name what it did *better* than the chosen
+  direction, and the criterion that decided against it.
+- **One-directional space**: one viable direction. Name the constraint that rules
+  out the rest, and what would have to change for a second direction to appear.
+
+Both cases are valid. A third thing is not: an alternative invented to fill a
+count. **If you cannot name one thing an alternative does better than the chosen
+direction, it is not an alternative — delete it and write the one-directional
+argument instead.** A fabricated choice is worse than an honest single direction:
+it makes shallow exploration look thorough, and nothing downstream can tell the
+two apart.
 
 **Trivial tasks**: if the task is a single command with a clear verification,
 output "Trivial task: [description]. No exploration needed." Skip to Spec.
@@ -85,11 +98,14 @@ output "Trivial task: [description]. No exploration needed." Skip to Spec.
 **MUST**:
 - Read relevant context (code, docs, specs, history)
 - Understand current state and desired outcome
-- Consider at least the first direction that comes to mind AND one alternative
+- Settle which case applies, and record what settles it — the comparison,
+  or the constraint that makes it one-directional
 - State task boundaries: what you will do, what you will NOT do
 
 **MUST NOT**:
-- Jump to a solution without considering alternatives
+- Take the first direction that came to mind without recording why the space
+  offers nothing better
+- Invent alternatives to satisfy a count
 - Guess or assume when information is available via tools or codebase
 - Skip Explore and jump to Spec
 
@@ -120,7 +136,9 @@ ambiguity?**
 - Anticipate risks: what could go wrong? what would early detection look like?
 - Define acceptance criteria that are measurable — not "tests pass" but
   "`pnpm test` exit code 0, all 373 pass"
-- State reasoning: why this direction over alternatives considered in Explore
+- State reasoning: what the chosen direction buys — the criterion that decided it,
+  and what it gives up. If nothing distinguishes it from the alternatives, Explore
+  settled nothing: go back
 - Write down **what this round does not do**: what this change deliberately
   leaves out, which alternatives were considered and rejected, which details are
   deliberately left unwritten. Write "none" if there is nothing on it. Both
@@ -156,10 +174,13 @@ of these, and the answers must be concrete:
    if it is wrong? How would you detect the error early?
 3. **Overengineering**: point out at least 1 place the spec could be simpler.
    Is the simplest thing that could possibly work?
-4. **Risk**: is this a destructive change? What is the blast radius? Is there a
-   rollback path?
-5. **Traversal thoroughness**: was the solution space thoroughly explored
-   during Explore? Are the eliminations defensible? Was any direction missed?
+4. **Risk**: is this a destructive change? How far does the change reach? Is there a
+   way to undo it?
+5. **Chosen, not defaulted**: does Explore show a decided trade-off or a valid
+   one-directional argument? Does every eliminated direction name what it did
+   better than the chosen one — if none does, the list is filler and the
+   exploration did not happen. Was a direction missed that a reasonable engineer
+   would have raised?
 6. **What should have moved with it**: walk the spec itself, not just the five
    questions above. What does this change touch that the spec never mentions?
    Does every reference it makes still resolve? Does every claim it makes come
@@ -179,7 +200,7 @@ beyond tool availability. No overengineering."
 
 **Executor**: dispatch the hunt to a subagent that can judge and is read-only
 (pick the type from your own tool list). The read-only constraint, what its task
-must carry, and the shape of what it must return are all specified in the review
+must carry, and what it must return are all specified in the review
 loop's §5 and §7.
 
 **Then route what survived adjudication**, by severity:
@@ -189,7 +210,7 @@ loop's §5 and §7.
 - mixed → major dominates
 
 **Do NOT fix a problem in Challenge** — return to Spec or Explore instead.
-Challenge is a gate, not a repair shop. Do not re-score the adjudicator's
+Challenge is a gate; it does not do repairs. Do not re-score the adjudicator's
 verdicts either: in this process the verdict belongs to the context that did not
 find the problem.
 
@@ -258,11 +279,11 @@ out.
 - **Nothing survived adjudication** → task complete
 - **Anything survived** → return to Explore with the finding list as input for a
   new cycle. The items are already classified, and anything "partially valid" or
-  "subsumed" has already been rewritten — route the rewrites, not the originals.
+  "part of a larger problem" has already been rewritten — route the rewrites, not the originals.
 
 **Executor**: dispatch the hunt to a subagent that can judge and is read-only
 (pick the type from your own tool list). The read-only constraint, what its task
-must carry, and the shape of what it must return are all specified in the review
+must carry, and what it must return are all specified in the review
 loop's §5 and §7.
 
 **MUST NOT**:
@@ -297,7 +318,7 @@ Stop and report to the user when:
 ## Recursive decomposition
 
 If a step in the spec is itself complex (multi-level decisions, significant
-uncertainty, or large blast radius), start a **new nested iteration** for that
+uncertainty, or a wide-reaching change), start a **new nested iteration** for that
 step alone: Explore → Spec → Challenge → Execute → Verify within the outer
 Execute phase.
 
@@ -341,8 +362,10 @@ track progress with your harness's progress list instead.
 
 File structure template: see `references/spec-template.md`.
 **Constraints**:
-- Explore output must list directions considered and eliminated — "no alternatives
-  to the first idea" is forbidden (trivial tasks excepted)
+- Explore output must show the direction was chosen, not defaulted: either the
+  eliminated directions with what each did better and the deciding criterion, or
+  the constraint that makes the space one-directional. An alternative with no
+  stated advantage is forbidden (trivial tasks excepted)
 - Spec "How" must be executable — another engineer following it encounters zero
   ambiguity
 - Spec "Verify" criteria must be measurable — not "tests pass" but

@@ -5,35 +5,35 @@ English | [中文版](./README.zh.md)
 My agent skills. Two of them, and together they cover the one failure mode that
 matters: **an agent that never checks its own work.**
 
-They are the two halves of a single quality-control loop. One runs *before* the
+They are the two parts of one quality-control process. One runs *before* the
 agent acts; the other runs once there is something to check — which is usually
 after acting, but includes anything whose correctness can't be self-evidenced.
 
 | Skill | When it runs | What it forces |
 |---|---|---|
 | [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced, and where missing a real problem costs far more than a false alarm | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete shape is decided at use time. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced, and where missing a real problem costs far more than a false alarm | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete form is decided at use time. |
 
 ## Why both
 
 An LLM generates the statistically most likely next token. A correct answer and a
-plausible wrong one have the same statistical shape, so the model cannot tell
-them apart from the inside. This breaks in two places, and the two need different
+plausible wrong one are the same thing to it statistically, so the model cannot tell
+them apart from the inside. This goes wrong in two places, and the two need different
 fixes.
 
 Verification is the easier half: "does this match what it's judged against?" is
 an objective question, so it can be enforced from outside — a contract, a
 checklist, evidence. Thinking is the harder half. "Is this the right approach?"
-needs an internal compass pointing at *better*, and the model steers at *most
-likely* instead. It doesn't settle for shallow because it is lazy; it settles for
+needs a way to judge which option is *better*, and the model can only go by which
+is *most likely* instead. It doesn't settle for shallow because it is lazy; it settles for
 shallow because it cannot tell which direction goes deeper. The human equivalent
 is attitude, and you cannot prompt a model into wanting better work.
 
 **Before acting — the first idea wins.** The highest-probability continuation is
 the first "thought," and the model runs with it. No alternatives, no "is this
-even the right problem?" So this half can only be pushed by structure: walk the
-model through the steps someone who actually cares about the work takes
-naturally. That is `task-spec`.
+even the right problem?" So the only fix on this side is to build the steps into
+a process: walk the model through the steps someone who actually cares about the
+work takes naturally. That is `task-spec`.
 
 **Once there is something to check — "done" means "done well."** The model does
 not catch its own contradictions or missed criteria. So this is the half that

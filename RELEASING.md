@@ -126,6 +126,12 @@ file, one more item in a checklist that already existed.
 |---|---|
 | `steps` | the steps of the process changed — how many there are, what order they come in, or a step appearing or disappearing |
 | `removed` | something that existed is gone — a file, a mode, a rule, a verdict, a section |
+
+"Gone" means the thing itself is no longer there under any name. Renaming is not
+this fact: if what it does survives and only what it is called changes, the item is
+not gone, and the step is minor. Renaming a verdict, a phase, or a section is a
+`Changed` entry that should say the old name and the new one, so a reader who knew
+the old term can find it.
 | `trigger` | when the skill runs changed — the frontmatter `description`, or the name |
 | `depends` | it stopped standing alone — it now needs another skill to work |
 

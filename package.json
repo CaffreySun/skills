@@ -1,6 +1,6 @@
 {
   "name": "caffreysun-skills",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "CaffreySun's agent skills: force the agent to think before it acts, and check its work after.",
   "repository": {

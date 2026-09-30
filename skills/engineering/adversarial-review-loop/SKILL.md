@@ -4,7 +4,7 @@ description: >
   Closed-loop adversarial review: get the material ready → hunt for problems → dedupe → adjudicate every finding in a
   context that did not make it (one adjudicator judges the whole list; an "invalid" verdict must come with
   counter-evidence) → then either fix what survived and send the fixes back through review until a round yields
-  no "valid", no "partially valid" and no "subsumed" finding, or — in judge-only mode — stop there and hand over
+  no "valid", no "partially valid" and no "part of a larger problem" finding, or — in judge-only mode — stop there and hand over
   the list of problems that survived.
   The one core discipline: the context that finds a problem must never be the context that decides whether it is
   real. Use it on any object whose correctness you cannot judge from the object itself, and where missing a real
@@ -31,15 +31,15 @@ It also applies when the user says "review this carefully" or "re-review after f
 
 ## 2. Why it has to be a loop
 
-These three numbers explain why the process is shaped the way it is, and why none of its steps can be skipped:
+These three numbers explain why the process is built the way it is, and why none of its steps can be skipped:
 
 1. **Fixes introduce new problems of their own**: in measured runs, **16 of 51 fixes** introduced something new, or fixed one place and missed another — which is why, in a full round, every batch of fixes has to go back through review.
-2. **Adjudication overturns a substantial share of findings**: roughly **1 in 5 to 1 in 3** findings ends up invalid, downgraded, or re-described because it was really a symptom of something larger. What this step saves is not time; it is a batch of pointless edits.
+2. **Adjudication overturns a substantial share of findings**: roughly **1 in 5 to 1 in 3** findings ends up invalid, downgraded, or re-described because it was really one instance of something larger. What this step saves is not time; it is a batch of pointless edits.
 3. **It converges**: on a real project, the number of new problems each round found inside the previous round's fixes went **8 → 3 → 3 → 2 → 0**. The process is heavy, but it is not endless.
 
 The worst defects are usually not the ones you find by walking a checklist. They are the ones an adjudicator pulls out by asking a question nobody else asked: "this edit — which path that should have changed alongside it did it miss?"
 
-## 3. The shape of the loop
+## 3. How the loop runs
 
 ```mermaid
 flowchart LR
@@ -59,7 +59,7 @@ Every round after the first goes back to step 2, never to step 1.
 
 **Full round** — steps 1 to 6, what the diagram draws. Use it when this process owns the fix, that is, when nothing else is going to act on the findings.
 
-**Judge-only round** — steps 1 to 4, then stop. Nothing is fixed and there is no re-review inside the round. What the round produces is **the list of problems that survived adjudication**, and what happens to that list is somebody else's job. Use it when this round is a gate inside a larger process that owns the fix and the re-entry: that process fixes, then runs this round again on the new state, so convergence is measured across those rounds rather than inside one. The "0 valid + 0 partially valid + 0 subsumed" rule in §8 is not this mode's exit condition — producing the finding list is.
+**Judge-only round** — steps 1 to 4, then stop. Nothing is fixed and there is no re-review inside the round. What the round produces is **the list of problems that survived adjudication**, and what happens to that list is somebody else's job. Use it when this round is a gate inside a larger process that owns the fix and the re-entry: that process fixes, then runs this round again on the new state, so convergence is measured across those rounds rather than inside one. The "0 valid + 0 partially valid + 0 part of a larger problem" rule in §8 is not this mode's exit condition — producing the finding list is.
 
 This is not the cheap mode. Steps 1 to 4 are the expensive part; what it drops is the half that was about to be done twice anyway.
 
@@ -91,7 +91,7 @@ The reviewers read the material itself, not your context, so before the round st
 
 Alongside that, write these three things out **item by item**, and put them into **every finder's task verbatim**:
 
-1. **What the object is**: what this material is, and the author's own account of why it was done this way — mark that second half as **the author's account, not part of the standard**. A reason carried inside the object is the object grading itself; the finders have to know what it is, not to be handed its defence.
+1. **What the object is**: what this material is, and the author's own account of why it was done this way — mark that second half as **the author's account, not part of the standard**. A reason carried inside the object is the author marking their own work; the finders have to know what it is, not to be handed it as a justification.
 2. **The acceptance criteria**: write down what this review is judging against. If it is an existing specification, convention, or higher-level document, name which one. If it was settled on the spot, write the text of those criteria here.
 3. **What this round does not do** (required; write "none" if there is nothing on it; the common categories are below — add or drop them to suit the object). **Without this list, reviewers will report the things you deliberately left alone as defects** — that is the number one source of noise, and it buries the real findings:
    - Scope or level of detail already declared out of bounds: not doing X / Y / Z this round — must not be reported as an omission; the only reportable thing here is whether the consequences of not doing it were spelled out.
@@ -104,7 +104,7 @@ Alongside that, write these three things out **item by item**, and put them into
 
 **Use as few parallel subagents as you can. One subagent should finish one piece of work on its own** — one hunt is one subagent, one round of adjudication is one adjudicator. Every extra subagent carries a fixed overhead that has nothing to do with the task (system prompt, tool definitions, skill list), and you pay it again on every round.
 
-**Settle this before you dispatch, not in §11's closing check**: **is one adjudicator going to judge the whole list?** Send it to two only when the list is more than one context can read — never because it has a lot of rows on it, and never to go faster. Two adjudicators over one list each pay that fixed overhead, neither can mark a finding as the symptom of one sitting in the other half, and you merge two sets of verdicts by hand. §11 confirms this was settled; it is not where it gets decided.
+**Settle this before you dispatch, not in §11's closing check**: **is one adjudicator going to judge the whole list?** Send it to two only when the list is more than one context can read — never because it has a lot of rows on it, and never to go faster. Two adjudicators over one list each pay that fixed overhead, neither can see that a finding in its own half is the same one already reported in the other, and you merge two sets of verdicts by hand. §11 confirms this was settled; it is not where it gets decided.
 
 Split only when the object is genuinely too large for one context to hold — on the order of a few dozen files, or a few hundred changed lines. When you do split, split as little as you can, keep the pieces non-overlapping, and make the pieces together cover everything. When there is more than one piece, one of them has to be the one that goes after what the others missed — see §7.
 
@@ -136,7 +136,7 @@ If §4 put a subagent in charge of the round, its task carries everything above,
 
 Its reply contains conclusions only:
 
-1. A one-sentence conclusion, and how many verdicts of each kind (valid / partially valid / invalid / subsumed).
+1. A one-sentence conclusion, and how many verdicts of each kind (valid / partially valid / invalid / part of a larger problem).
 2. The findings table: `# | location | verdict | one sentence stating the problem | minimal fix`.
 3. Items that need the user to decide, written out per §9 — "none" if there are none.
 4. How many it dispatched in total, and a confirmation that no adjudicator is a finder.
@@ -144,7 +144,7 @@ Its reply contains conclusions only:
 
 Not allowed: pasting back the raw output, tables, or report body of its own dispatches; pasting the full text of the object; modifying anything without authorization.
 
-**The reply must carry concrete fixes.** Once the round is handed out, you no longer have a direct feel for whether a finding is exaggerated — a concrete `old→new` lets you see it at a glance without re-gathering the evidence.
+**The reply must carry concrete fixes.** Once the round is handed out, you no longer have your own direct judgement of whether a finding is exaggerated — a concrete `old→new` lets you see it at a glance without re-gathering the evidence.
 
 **Review only, unless you grant write access.** If the orchestrator is allowed to fix as well, it must work **serially**: while it holds the working tree, you must not edit the same files.
 
@@ -152,7 +152,7 @@ Not allowed: pasting back the raw output, tables, or report body of its own disp
 
 **Whoever you dispatch may have no shell tool.** When a task needs to see a diff or command output, whoever dispatches it runs the command first and sends the raw text along with the task.
 
-**While the dispatches are out.** Do not poll with a short timeout, and do not sit in one silent open-ended wait either. If you have local work — the round's record (§8), the next round's material, reading what has already come back — do it; results arrive on their own. When you are genuinely idle, wait in bounded stretches where your harness allows it, and between stretches list what is still out. **A seat that finished without reporting is one you paid for and did not get** — worth chasing now, not at closing. Chase the ones that are done, not the ones that are slow.
+**While the dispatches are out.** Do not poll with a short timeout, and do not sit in one silent open-ended wait either. If you have local work — the round's record (§8), the next round's material, reading what has already come back — do it; results arrive on their own. When you are genuinely idle, wait in bounded stretches where your harness allows it, and between stretches list what is still out. **A dispatched task that finished without reporting is one you never got a result from** — worth chasing now, not at closing. Chase the ones that are done, not the ones that are slow.
 
 ## 8. Dedupe · independent adjudication · fix only what survived · re-review the fixes · when to stop
 
@@ -162,9 +162,9 @@ When the same place is hit **independently** by two or more finders, that is a s
 
 ### Independent adjudication (the one judging must not be the one who found it)
 
-- **The adjudicator must never be the one who found it.** If the same finding goes through adjudication again in a later round, it also cannot reuse its earlier adjudicator — this has no exceptions. **One adjudicator judging many findings is the normal shape**, not something to avoid: split the list only when it is genuinely too large for one context to hold (§6). **If you do split it, the report says so and says why** — and the reason has to be how much the list is to read, not how many rows are on it. When you cannot dispatch anyone, use the two-pass method in §4.
+- **The adjudicator must never be the one who found it.** If the same finding goes through adjudication again in a later round, it also cannot reuse its earlier adjudicator — this has no exceptions. **One adjudicator judging many findings is the normal case**, not something to avoid: split the list only when it is genuinely too large for one context to hold (§6). **If you do split it, the report says so and says why** — and the reason has to be how much the list is to read, not how many rows are on it. When you cannot dispatch anyone, use the two-pass method in §4.
 
-**A context judging several findings in a row is anchored by the finding before**, so fence each of them off:
+**A context judging several findings in a row is influenced by the finding before it**, so keep each one separate from the rest:
 
 1. **Every finding gets its own verdict**, with its own evidence, re-description, minimal fix and counter-evidence. **"Same as above" and "this whole category looks fine" are not allowed.**
 2. The task must say explicitly: **do not let the other findings influence the one you are judging.** Finish every verdict first, then write the summary — never the other way round.
@@ -177,28 +177,28 @@ When the same place is hit **independently** by two or more finders, that is a s
 
 | What | Content |
 |---|---|
-| Verdict | Valid / partially valid / invalid / subsumed — these four tiers only |
+| Verdict | Valid / partially valid / invalid / part of a larger problem — these four tiers only |
 | Evidence | What you looked up yourself: **location** + verbatim excerpt + **how to reproduce the check you made** (if it was a command, give the command so someone else can re-run it; if it was a reading comparison, give both locations and both texts) |
-| Re-description | Only when the verdict is "partially valid" or "subsumed". **Partially valid**: rewrite the finding so that what is left is fully valid — cut it down to the part that holds, and drop the part that was overstated or misdiagnosed. **Subsumed**: name the larger problem this is a symptom of, with a location for it. Either way, **the rewrite is the finding from here on** — the original text is not what gets acted on. |
+| Re-description | Only when the verdict is "partially valid" or "part of a larger problem". **Partially valid**: rewrite the finding so that what is left is fully valid — cut it down to the part that holds, and drop the part that was overstated or misdiagnosed. **Part of a larger problem**: name that larger problem, with a location for it. Either way, **the rewrite is the finding from here on** — the original text is not what gets acted on. |
 | Minimal fix | A version someone can edit straight in (for a replacement, write `old→new`; for an insertion, a deletion, or something a human has to decide, say where it goes, what comes out, and what the content is) + whatever else has to change along with it |
 | Counter-evidence | Only when the verdict is "invalid": **location** + verbatim excerpt |
 
 The counter-evidence is what earns an "invalid" verdict, and the adjudicator does that work either way. It is **not** carried into the finding list — nothing gets acted on for an invalid finding, so nothing needs saying about it.
 
-**What is in the finding list.** This is the output a reader sees, and it is the same shape whether the round was full or judge-only:
+**What is in the finding list.** This is the output a reader sees, and it is the same whether the round was full or judge-only:
 
 - **valid** → the finding as the finder wrote it.
 - **partially valid** → the re-description, not the original.
-- **subsumed** → the root problem, not the symptom.
+- **part of a larger problem** → the larger problem, not this one instance.
 - **invalid** → nothing at all.
 
-So the list is problems that hold, each already cut down to the part that stands up. Every line in it can be acted on without re-litigating anything.
+So the list is problems that hold, each already reduced to the part that holds up. Every line in it can be acted on without arguing it again.
 
 A finding marked **`mandated by the standard`** is on the list but not in the fix set: acting on it would contradict the standard, and the author of the standard does not grade their own work. Record it for whoever reads the report, say what it collides with, and leave the choice to them. This is the one case where a finding that survived adjudication is not fixed — and it still gets said out loud, never dropped.
 
 ### Fix only what survived
 
-- **Fix everything that appears in the finding list.** For a "partially valid" finding, follow the rewrite the adjudicator gave — do not fix the inflated version from the original finding. For a "subsumed" one, fix the root problem, not the symptom. Multiple edits in the same file are made one after another in order (they cannot be parallel); different files can be edited at the same time. Prefer the ready-made fix the adjudicator supplied.
+- **Fix everything that appears in the finding list.** For a "partially valid" finding, follow the rewrite the adjudicator gave — do not fix the overstated version from the original finding. For one judged "part of a larger problem", fix the larger problem, not the one place that showed it. Multiple edits in the same file are made one after another in order (they cannot be parallel); different files can be edited at the same time. Prefer the ready-made fix the adjudicator supplied.
 - **Except the tier the object declared deferrable** (§7 item 4). A finding in that tier that survived adjudication is **deferred, not dropped**: it goes into the report as a carry-over item, with its location and the fix that was ready, and the reader decides. Deferral is never a way to close a round early, and never silent — what you defer, you list.
 - **Do not fix "invalid" findings.** They are not in the finding list either, so there is nothing to say about them beyond the adjudication record.
 - **If the same fix keeps failing, change who makes it.** Twice through the loop on the same finding means the context making the fix cannot see its own problem: send the next pass to a fresh one, carrying the finding and a plain statement of what was already tried. Only after repetition — the context that knows what it chose and why is worth keeping until it has demonstrably stopped working.
@@ -212,9 +212,9 @@ A finding marked **`mandated by the standard`** is on the list but not in the fi
 
 Send **everything fixed this round** to review as a new batch: **send only this round's delta, never the whole object**. Build that delta **out of what you changed, not out of a stored copy of the old state** — you already hold it in a better form than a diff: every fix in the list arrived as a ready-made `old→new` from adjudication, together with what had to move alongside it. Hand the re-reviewer exactly those, each with the location it landed at and a note for the ones that were insertions or deletions rather than replacements. Where version control is in use you may produce a diff as well (`git diff <baseline>` compares the working tree, covering committed, staged, and unstaged parts; run `git add -N` for new files first, see §5 item 2). Either way, make sure the adjudicator can see the delta. Every other step is exactly as before.
 
-**In a full round you may stop when a re-review round comes back with "0 valid", "0 partially valid" and "0 subsumed"** (anything judged "partially valid" has to be fixed using its rewrite, and anything judged "subsumed" has to be fixed at the root, before it counts as done) — **counted over the set this round set out to fix**; anything deferred or `mandated by the standard` is carried, and does not hold the round open. A judge-only round has no such test — see §3.
+**In a full round you may stop when a re-review round comes back with "0 valid", "0 partially valid" and "0 part of a larger problem"** (anything judged "partially valid" has to be fixed using its rewrite, and anything judged "part of a larger problem" has to be fixed at the larger problem, before it counts as done) — **counted over the set this round set out to fix**; anything deferred or `mandated by the standard` is carried, and does not hold the round open. A judge-only round has no such test — see §3.
 
-**A round that is not getting smaller is a different problem from a round that is slow.** Before you buy another round, look at what this round's findings have in common. If they are about what the last round's fixes touched, or the same defect keeps coming back under a new name, the loop is not converging: the object has a structural problem that more rounds will not reach. Two rounds at the same size settle nothing either way — a healthy loop can hold flat for a round before it falls. When you judge it structural, stop dispatching and hand over the round's history, or go back to §1 trait 2 and ask whether the standard could be settled at all. **Do not settle it yourself**: whoever ran the round is not the context that judges it.
+**A round that is not getting smaller is a different problem from a round that is slow.** Before you run another round, look at what this round's findings have in common. If they are about what the last round's fixes touched, or the same defect keeps coming back under a new name, the loop is not converging: the object has a structural problem that more rounds will not reach. Two rounds at the same size settle nothing either way — a loop that is working can stay flat for one round before it starts shrinking. When you judge it structural, stop dispatching and hand over the round's history, or go back to §1 trait 2 and ask whether the standard could be settled at all. **Do not settle it yourself**: whoever ran the round is not the context that judges it.
 
 **Do not** substitute "the tests pass" or "the grep returns nothing" for this step — that is one check at closing time, and it is not an adversarial review. An adjudication **can overturn a previous round's verdict** (when new evidence turns up); **the new evidence wins**, and the report has to say plainly what was overturned.
 
@@ -254,13 +254,13 @@ if [ "$rc" -eq 1 ]; then echo "(zero hits)"; elif [ "$rc" -ge 2 ]; then echo "(c
 - Is there a **round record** (§8) — written as the rounds ran, not assembled at the end — and does its first line say which object it belongs to? Is it free of any snapshot of the object?
 - Does every finder's reply carry **"set aside deliberately"** with "none" written out rather than left blank, and did you rule on each line that was there?
 - Was every finding judged on its own evidence — no "same as above", and the summary written only after every verdict?
-- Did each adjudicator hand back all five things (§8)? Did every "invalid" come with a location and counter-evidence, and every "partially valid" and every "subsumed" with a rewrite? **Is the finding list carrying only what survived** — no invalid finding, no counter-evidence?
-- **Full rounds**: is there a record of the fix-and-re-review rounds? In the round you stopped at, were "valid", "partially valid" and "subsumed" all 0 **for the set that round set out to fix**? Is everything deferred, and everything marked `mandated by the standard`, carried into the report with its location rather than left out? Did you paste **raw command output** at closing, rather than a line saying "checked and passed"?
+- Did each adjudicator hand back all five things (§8)? Did every "invalid" come with a location and counter-evidence, and every "partially valid" and every "part of a larger problem" with a rewrite? **Is the finding list carrying only what survived** — no invalid finding, no counter-evidence?
+- **Full rounds**: is there a record of the fix-and-re-review rounds? In the round you stopped at, were "valid", "partially valid" and "part of a larger problem" all 0 **for the set that round set out to fix**? Is everything deferred, and everything marked `mandated by the standard`, carried into the report with its location rather than left out? Did you paste **raw command output** at closing, rather than a line saying "checked and passed"?
 - **Judge-only rounds**: did the round stop after adjudication — nothing fixed, nothing re-reviewed — and was the finding list handed over intact?
 - If an orchestrator ran it, was its reply conclusions only? Does the findings table carry concrete fixes? Did it leave every file alone when it wasn't authorized to edit?
 - Do the items handed to the user carry "what was checked + the consequences of each option + my recommendation"? When nobody could be dispatched, does the report say plainly that "the two-pass method was used, with no independent-context adjudication"?
 
-**Pitfalls already hit**: running the whole process yourself as the lead agent drowns your context in N subagents' output (which is why it defaults to an orchestrator);
-putting a role that is not allowed to dispatch in charge of orchestrating means it can't dispatch anyone, and the round comes back to you; **one level of nesting is not the same failure** — a subagent that hands the round to a subagent that dispatches the finders and the adjudicator is §4's first branch and works wherever the harness grants dispatch rights. What fails is going **one level deeper than that** (a subagent that dispatches subagents that dispatch subagents again) — check the depth your harness allows before you rely on it, and never conclude from this warning that nesting is broken in general; judging several findings in one context without fencing each one off lets the earlier verdicts drag the later ones (§8); writing only "fixed" in the report without saying why it was judged that way means the same question comes back next time. The three commonest ways to miss an edit are: **the same phrasing changed in N−1 places** (go through every place it appears, including elided forms and variants — don't search literally), **the same concept drifting under several names** (settle on what most people at that level write, or on the project's existing authoritative source), and **peripheral files left out** (scripts, fallback manuals, and tables of counter-examples sit outside the main edit area and have to be listed separately and changed along with everything else).
+**Pitfalls already hit**: running the whole process yourself as the lead agent fills your context with N subagents' output (which is why it defaults to an orchestrator);
+putting a role that is not allowed to dispatch in charge of orchestrating means it can't dispatch anyone, and the round comes back to you; **one level of nesting is not the same failure** — a subagent that hands the round to a subagent that dispatches the finders and the adjudicator is §4's first branch and works wherever the harness grants dispatch rights. What fails is going **one level deeper than that** (a subagent that dispatches subagents that dispatch subagents again) — check the depth your harness allows before you rely on it, and never conclude from this warning that nesting is broken in general; judging several findings in one context without keeping each one separate lets the earlier verdicts sway the later ones (§8); writing only "fixed" in the report without saying why it was judged that way means the same question comes back next time. The three commonest ways to miss an edit are: **the same phrasing changed in N−1 places** (go through every place it appears, including elided forms and variants — don't search literally), **the same concept named differently in several places** (settle on what most people at that level write, or on the project's existing authoritative source), and **peripheral files left out** (scripts, fallback manuals, and tables of counter-examples sit outside the main edit area and have to be listed separately and changed along with everything else).
 
 

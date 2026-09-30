@@ -9,7 +9,8 @@ Four phases are recorded: Explore, Spec, Challenge, Verify.
 ## Cycle 1
 
 ### Explore
-<problem understanding, directions considered, directions eliminated and why>
+<problem understanding; the directions eliminated and what each did better than
+the chosen one, or the constraint that makes the space one-directional>
 
 ### Spec
 <spec body: What / How / Verify criteria / reasoning>
@@ -30,18 +31,19 @@ Standard = the task request plus the Explore output.>
 - Edge cases: <at least 2>
 - Wrong assumptions: <at least 1>
 - Overengineering: <at least 1>
-- Risk: <destructive? blast radius? rollback?>
-- Traversal: <solution space thoroughly covered? eliminations defensible?>
+- Risk: <destructive? how far does it reach? how to undo it?>
+- Chosen, not defaulted: <decided trade-off or valid one-directional argument? does
+  each eliminated direction name what it did better? was a direction missed?>
 - What should have moved with it: <what this change touches that the spec never
   mentions; references that no longer resolve; claims without evidence>
 
 **Surviving findings** (the adjudicated list — write "none" if the round produced
-nothing; anything "partially valid" or "subsumed" appears as its rewrite):
+nothing; anything "partially valid" or "part of a larger problem" appears as its rewrite):
 
 | # | Location | Severity | Problem | Minimal fix | Confidence |
 |---|---|---|---|---|---|
 
-Verdict spread: <n valid / n partially valid / n subsumed / n invalid-discarded>
+Verdict spread: <n valid / n partially valid / n part of a larger problem / n invalid-discarded>
 Routing: minor → Spec · major → Explore · none → Execute
 
 ### Verify
@@ -59,7 +61,7 @@ plus the change that produced it. Standard = the acceptance criteria above.>
 | # | Location | Severity | Problem | Minimal fix | Confidence |
 |---|---|---|---|---|---|
 
-Verdict spread: <n valid / n partially valid / n subsumed / n invalid-discarded>
+Verdict spread: <n valid / n partially valid / n part of a larger problem / n invalid-discarded>
 Routing: none → task complete · anything → Explore for a new cycle
 
 ## Cycle 2 (triggered by <specific reason>)
