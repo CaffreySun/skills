@@ -135,12 +135,7 @@ scripts/                         # 维护脚本
 npm run list     # 列出所有 SKILL.md
 npm run check    # 清单 + 版本号 + changelog 三者一致（CI 门禁用这个）
 npm run check:release   # 同上，再跟这个分支将要落地的提交比一次
-./scripts/link-skills.sh   # 把技能软链到 ~/.claude/skills 和 ~/.agents/skills
 ```
-
-已经占着位置的东西一律保留、绝不删除：实体目录会被移到 `.bak-<名字>-<时间戳>/`；
-软链则会把它指向的**实际内容**（而不是链接本身）复制到同一个位置。重复运行不会重复
-产生备份。
 
 ## 发版
 
