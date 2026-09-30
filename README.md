@@ -158,12 +158,7 @@ path to `.claude-plugin/plugin.json`. `npm run check` fails if you forget.
 npm run list     # enumerate every SKILL.md
 npm run check    # manifest + version + changelog consistency (the CI gate)
 npm run check:release   # the same, plus a comparison against the commit it lands on
-./scripts/link-skills.sh   # symlink skills into ~/.claude/skills and ~/.agents/skills
 ```
-
-Anything already in a skill's slot is preserved, never deleted: a real directory
-is moved aside to `.bak-<name>-<timestamp>/`, and a symlink's *content* (not the
-link itself) is copied to the same place. Re-running won't stack up duplicates.
 
 ## Releasing
 

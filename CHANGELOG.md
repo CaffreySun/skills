@@ -10,6 +10,19 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [1.4.1] - 2026-09-30
+
+### Removed
+
+- **`scripts/link-skills.sh`.** It symlinked the repo's skills into
+  `~/.claude/skills` and `~/.agents/skills` so a maintainer could pick up changes
+  with `git pull`. Neither use it: while developing, the skill is read straight
+  from the repository; once it ships, `npx skills add` and `npx skills update`
+  install and refresh it. Nothing wired to it either — not `npm run check`, not
+  `check:release`, not the CI workflow — and it covered neither of the harness
+  directories in current use. The skills themselves are untouched, so no install
+  changes behaviour, and the step is a patch.
+
 ## [1.4.0] - 2026-09-30
 
 ### Changed
