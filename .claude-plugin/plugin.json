@@ -1,7 +1,7 @@
 {
   "name": "caffreysun-skills",
-  "version": "1.4.1",
-  "description": "CaffreySun's agent skills. task-spec forces the agent to explore, spec and adversarially challenge before acting; adversarial-review-loop reviews any object whose correctness cannot be self-evidenced, by partitioning discovery away from judgement.",
+  "version": "2.0.0",
+  "description": "CaffreySun's agent skills: task-spec adapts planning and execution to uncertainty and consequence; adversarial-review-loop finds substantive defects and verifies repairs with effort matched to risk.",
   "author": {
     "name": "CaffreySun",
     "url": "https://github.com/CaffreySun"

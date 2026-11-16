@@ -2,45 +2,21 @@
 
 English | [中文版](./README.zh.md)
 
-My agent skills. Two of them, and together they cover the one failure mode that
-matters: **an agent that never checks its own work.**
+Two complementary skills for thoughtful planning and evidence-based review.
+Both match effort to the task instead of requiring a fixed workflow for every change.
 
-They are the two parts of one quality-control process. One runs *before* the
-agent acts; the other runs once there is something to check — which is usually
-after acting, but includes anything whose correctness can't be self-evidenced.
-
-| Skill | When it runs | What it forces |
+| Skill | When it helps | What it does |
 |---|---|---|
-| [`task-spec`](./skills/engineering/task-spec/SKILL.md) | before acting | Explore the solution space, write an inspectable spec, then have that spec attacked adversarially — before a single file is touched. |
-| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | any object whose correctness can't be self-evidenced, and where missing a real problem costs far more than a false alarm | Partition discovery away from judgement and have every finding adjudicated by a context that did not produce it; a full round then fixes what survived and re-reviews the fixes until a round yields nothing, and a judge-only round stops at the finding list and hands it over. Works on a diff, a proposal, a migration plan, a contract — the concrete form is decided at use time. |
+| [`task-spec`](./skills/engineering/task-spec/SKILL.md) | uncertain, consequential, coordinated work, or an explicit planning request | Match planning depth to risk, preserve user constraints, adapt implementation with evidence, and verify the intended outcome. |
+| [`adversarial-review-loop`](./skills/engineering/adversarial-review-loop/SKILL.md) | substantive review of changes, proposals, and other consequential artifacts | Find supported defects, escalate consequential uncertainty selectively, and verify repairs with effort matched to risk. Review-only mode leaves repairs to the caller. |
 
 ## Why both
 
-An LLM generates the statistically most likely next token. A correct answer and a
-plausible wrong one are the same thing to it statistically, so the model cannot tell
-them apart from the inside. This goes wrong in two places, and the two need different
-fixes.
-
-Verification is the easier half: "does this match what it's judged against?" is
-an objective question, so it can be enforced from outside — a contract, a
-checklist, evidence. Thinking is the harder half. "Is this the right approach?"
-needs a way to judge which option is *better*, and the model can only go by which
-is *most likely* instead. It doesn't settle for shallow because it is lazy; it settles for
-shallow because it cannot tell which direction goes deeper. The human equivalent
-is attitude, and you cannot prompt a model into wanting better work.
-
-**Before acting — the first idea wins.** The highest-probability continuation is
-the first "thought," and the model runs with it. No alternatives, no "is this
-even the right problem?" So the only fix on this side is to build the steps into
-a process: walk the model through the steps someone who actually cares about the
-work takes naturally. That is `task-spec`.
-
-**Once there is something to check — "done" means "done well."** The model does
-not catch its own contradictions or missed criteria. So this is the half that
-gets enforceable from outside — and it applies to a proposal or a contract just
-as much as to a finished diff. That is `adversarial-review-loop` — and its core
-rule is that the thing finding problems and the thing judging whether they are
-real must never be the same context.
+Planning and verification answer different questions: is the approach appropriate,
+and does the result meet its intended outcome? `task-spec` structures planning,
+execution, and outcome verification. `adversarial-review-loop` supplies substantive
+review with effort matched to risk, using independent checks where they add value.
+Neither process replaces judgment; both need evidence from the actual work.
 
 ## Installation
 
@@ -87,49 +63,29 @@ Claude Code, Codex, Cursor, OpenCode, and 70+ more.
 
 ### task-spec
 
-> The spec is not a template to fill in. It is the output of a quality-control
-> process. If the process doesn't loop, quality didn't happen.
+**Plan enough to act; adapt with evidence.** User requirements and explicit approval
+gates stay authoritative. Assistant-authored implementation plans can evolve as
+new evidence arrives. Routine reversible work needs no spec file or challenge.
 
-Five phases, two loops:
-
-**Explore → Spec → Challenge → Execute → Verify**
-
-The inner loop (Explore → Spec → Challenge) sharpens the plan before acting.
-The outer loop (Execute → Verify → Explore) validates what came out after.
-
-The spec is a **binding contract**: Execute follows it, Verify judges by it.
-No spec reaches execution without surviving an adversarial challenge first.
-
-Challenge and Verify each run as a **judge-only round** of `adversarial-review-loop`.
-That skill supplies the method — get the material ready, hunt for problems, adjudicate
-every finding in a context that did not write what is being judged. task-spec keeps
-the routing, and keeps the rule that a review phase does not fix anything: the fix
-happens back in Spec or Explore, and the phase runs again on what comes back.
+Use an inspectable plan for consequential decisions, meaningful dependencies, or
+handoffs. Investigate real trade-offs, without quotas. Fix local errors locally;
+revisit the approach only when its assumptions fail. Independent review targets
+consequential questions instead of forming two mandatory gates. Verify the actual
+result against the original request. A plan-only request ends with the plan.
 
 [Read the skill →](./skills/engineering/task-spec/SKILL.md)
 · [Why it's built this way →](./docs/engineering/task-spec.md)
 
 ### adversarial-review-loop
 
-Built from measured runs, not theory. Two numbers from the field:
+**Review → handle supported findings → verify appropriately.** The lead coordinates
+directly; routine findings need no separate adjudicator. Independent checks target
+consequential disagreement, uncertain high-impact claims, and critical assumptions.
 
-- In one project, **16 of 51 fixes introduced or missed something** — which is
-  why every round of fixes gets reviewed again, until a round returns zero.
-- In another, **7 of 14 findings were downgraded and 1 was rejected outright**
-  by independent judgement — which is why the agent that finds a problem is
-  never the agent that decides whether it's real.
-
-Convergence on a real 24-file change: **8 → 3 → 3 → 2 → 0** findings across
-rounds of fix-then-re-review.
-
-Two modes. A **full round** fixes what survived and re-reviews the fixes until a
-round comes back empty. A **judge-only round** stops after adjudication and hands
-over the finding list — for when something else owns the fix and the re-entry,
-which is how `task-spec` runs it at its Challenge and Verify phases.
-
-The skill carries no project-specific procedure: how much to split, if at all,
-what counts as "correct", how the material is prepared — all decided by the agent
-applying it, from its own project and scenario.
+**Review-only / judge-only** returns findings without edits. **Review-and-fix / full
+round** makes authorized repairs and verifies actual changes. Additional review
+needs a concrete unresolved risk, not a requirement to reach zero findings. Reuse
+valid evidence, report material unknowns, and never treat a budget stop as a pass.
 
 [Read the skill →](./skills/engineering/adversarial-review-loop/SKILL.md)
 · [Why it's built this way →](./docs/engineering/adversarial-review-loop.md)

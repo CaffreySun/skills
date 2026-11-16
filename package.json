@@ -1,8 +1,8 @@
 {
   "name": "caffreysun-skills",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "private": true,
-  "description": "CaffreySun's agent skills: force the agent to think before it acts, and check its work after.",
+  "description": "CaffreySun's agent skills: adaptive planning, evidence-based execution, and risk-proportionate review.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CaffreySun/skills.git"

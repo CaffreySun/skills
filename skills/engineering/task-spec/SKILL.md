@@ -1,399 +1,154 @@
 ---
 name: task-spec
 description: >
-  Before acting on any task request, explore the solution space, produce an
-  inspectable spec, challenge it adversarially, then execute and verify. The
-  spec is a binding contract — Execute follows it, Verify judges by it. Works
-  on everything from one-line commands to multi-file features.
+  Plan and carry out work with effort matched to uncertainty, consequence, and coordination
+  needs. Use for ambiguous or multi-step changes, consequential design decisions, tasks
+  needing an inspectable plan or handoff, and explicit requests to use task-spec. Clarify
+  outcomes, resolve decision-relevant unknowns, adapt implementation as evidence arrives,
+  and verify the actual result. Routine, clear, reversible work needs no formal spec or
+  mandatory planning ceremony; a request for a plan alone does not authorize execution.
 ---
 
-# task-spec
+# Plan enough to act; adapt with evidence
 
-> The spec is not a template to fill in. It is the output of a quality-control
-> process. If the process doesn't loop, quality didn't happen.
+Use planning to reduce costly mistakes and coordinate work, not to prove that a process ran.
+Trust routine judgment. Spend effort on decisions whose uncertainty or consequences justify
+it, and verify against the user's intended result. A successful task may need no loop.
 
-## Core contract: the spec binds execution and verification
+## 1. Anchor the work in the request
 
-The spec produced by Explore+Spec+Challenge is not a "reference plan" — it is a
-**binding contract**:
-- **Execute** may only carry out what the spec has planned
-- **Verify** may only judge pass/fail against the spec's stated acceptance criteria
-- Anything not in the spec → outside this task's scope
+Identify the intended outcome, relevant constraints, authorization, and what evidence would
+show success. Inspect the current state and owning sources enough to avoid acting on a false
+premise. Reuse clear requirements and existing plans rather than rewriting them for ceremony.
 
-The fundamental purpose of Explore+Spec+Challenge is not "write a plan first" —
-it is **establish the sole, non-deviable contract that Execute and Verify will
-follow**.
+Keep two things distinct:
 
-## The two loops
+- **Requirements and commitments:** user instructions, agreed behavior, scope, compatibility,
+  safety and permission boundaries. An assistant-authored plan cannot override them or turn
+  an omission into an exclusion. Explicitly approved implementation choices and prescribed
+  procedures are constraints too, until the user authorizes a change.
+- **Working plan:** hypotheses, implementation choices, step order, and proposed checks. These
+  can change as evidence arrives within those constraints. A draft is not a new authority.
 
-```
-┌─────────────── INNER LOOP ──────────────────────┐
-│                                                  │
-│  Explore ──→ Spec ──→ Challenge ──(fail)──→ Spec
-│                          │                ↑      │
-│                          │(fail)          │      │
-│                          └────────→ Explore      │
-│                             ↑                    │
-└─────────────────────────────│────────────────────┘
-            (pass)            │
-              ↓               │
-           Execute ──→ Verify ──(fail)──→ Explore
-                           │                ↑
-                           └──(pass)────────┘
-                └──────── OUTER LOOP ────────┘
-```
+Ask when a missing fact or preference materially changes the outcome or authorization and
+cannot be resolved from available sources. Routine reversible implementation choices belong
+to the agent; choose a reasonable approach and proceed. Do not exhaust every possible source
+before asking a focused question. If a necessary answer is pending, continue unaffected work
+without assuming permission for the dependent action.
 
-**State transition rules (explicit):**
+## 2. Match planning depth to the decision
 
-| Current state | Condition | Next state |
-|---|---|---|
-| Start | — | Explore |
-| Explore | finished | Spec |
-| Explore | all directions dead ends | Terminate (report to user) |
-| Explore | critical info missing, cannot obtain | Terminate (report to user) |
-| Explore | trade-off decision needed, not covered by docs | Terminate (report to user) |
-| Spec | spec drafted | Challenge |
-| Challenge | no surviving finding | Execute |
-| Challenge | surviving finding, minor (wording, detail, measurability) | Spec |
-| Challenge | surviving finding, major (wrong direction, incomplete traversal, flawed assumption) | Explore |
-| Execute | all steps complete | Verify |
-| Execute | hit something spec doesn't cover | Explore |
-| Execute | blocker exceeds capability/permission | Terminate (report to user) |
-| Verify | no surviving finding | Terminate (task complete) |
-| Verify | surviving finding (after analysis) | Explore |
+Choose the least structure that makes the next meaningful action sound:
 
-Inner loop (Explore → Spec → Challenge) inspects the plan before acting; may run
-multiple rounds. A surviving minor finding routes to Spec, a surviving major one
-to Explore. Outer loop (Execute → Verify → Explore) inspects results after
-acting; a surviving finding at Verify triggers a new full cycle.
+- Clear, local, reversible work: inspect, act, and check. No spec file, alternative list,
+  exemption statement, or independent challenge is needed merely to use this skill.
+- Work with dependencies or a meaningful design choice: briefly state the approach, relevant
+  trade-off, and success checks. Use a short plan when it helps the user follow the work.
+- High-consequence, hard-to-reverse, or coordinated work: make the important decisions and
+  safeguards inspectable before committing. Address critical assumptions, affected interfaces,
+  failure recovery, and validation. A one-line command may belong here; file count is not risk.
 
-Each loop reduces what is left undecided.
+Increase depth when evidence reveals a larger consequence or unknown. Reduce it when checks
+settle the uncertainty. Do not turn these examples into mandatory tiers or a classification
+report. Honor an explicit request for a detailed spec, formal review, or approval gate.
 
----
+Investigate questions that could change the approach. Compare alternatives only when there
+is a real choice; describe the trade-off that matters, without inventing an inferior option
+or proving that no other approach exists. A small experiment can be better than a long plan:
+keep it within authorization, reversible, and isolated from consequential state. Stop exploring
+when another search is unlikely to change the next decision. Do not guess critical facts to
+save time; expose unresolved uncertainty and avoid dependent commitments.
 
-## Phase 1: Explore
+## 3. Make a useful plan when needed
 
-**Goal**: Understand the problem and traverse the solution space before committing
-to a direction. Do not produce a spec yet — produce an overview of the space and what is in it.
+A plan should make the intended result and important decisions understandable, without
+pretending every implementation detail is known. Include only what helps this task:
 
-**Output**: problem understanding, and evidence that the direction was **chosen,
-not defaulted**. Two cases — record whichever one holds:
+- Outcome and relevant requirements, with sources where ambiguity matters.
+- Approach and dependencies; the reason for a consequential choice.
+- Observable success criteria derived from the request, and how to check them.
+- Important uncertainty, scope boundaries, or recovery conditions.
 
-- **Real choice**: two or more directions a reasonable engineer could have
-  picked. For each eliminated one, name what it did *better* than the chosen
-  direction, and the criterion that decided against it.
-- **One-directional space**: one viable direction. Name the constraint that rules
-  out the rest, and what would have to change for a second direction to appear.
+Describe behavior rather than arbitrary test counts: for example, “legacy and new payloads
+both preserve their meaning,” with the relevant compatibility check. Existing tests can be
+part of the evidence; passing them alone does not establish a requirement they never cover.
+Do not soften a criterion because implementation failed it. Correct an inaccurate criterion
+against the original requirement and disclose a consequential correction.
 
-Both cases are valid. A third thing is not: an alternative invented to fill a
-count. **If you cannot name one thing an alternative does better than the chosen
-direction, it is not an alternative — delete it and write the one-directional
-argument instead.** A fabricated choice is worse than an honest single direction:
-it makes shallow exploration look thorough, and nothing downstream can tell the
-two apart.
+Save a plan when requested, needed for a handoff, or useful for longer work. Use an existing
+project convention, otherwise `.task_spec/<slug>.md` is a reasonable location. The optional
+[plan outline](references/spec-template.md) is for that situation, not a required form. Keep
+the current plan readable; retain only decisions or previous attempts needed to explain or
+resume the work. No append-only cycle log or separate spec per subtask is required.
 
-**Trivial tasks**: if the task is a single command with a clear verification,
-output "Trivial task: [description]. No exploration needed." Skip to Spec.
+A plan-only request ends with the requested plan and material unknowns. Do not implement it
+or seek execution approval merely because the plan is ready.
 
-**MUST**:
-- Read relevant context (code, docs, specs, history)
-- Understand current state and desired outcome
-- Settle which case applies, and record what settles it — the comparison,
-  or the constraint that makes it one-directional
-- State task boundaries: what you will do, what you will NOT do
+## 4. Challenge consequential assumptions selectively
 
-**MUST NOT**:
-- Take the first direction that came to mind without recording why the space
-  offers nothing better
-- Invent alternatives to satisfy a count
-- Guess or assume when information is available via tools or codebase
-- Skip Explore and jump to Spec
+Ask what could invalidate the approach before an expensive commitment. Check the relevant
+edge cases, dependencies, and assumptions; there is no quota of alternatives, flaws, or
+simplifications to produce. Straightforward work needs no separate Challenge phase.
 
----
+Use independent scrutiny when requested, or when a critical assumption for an irreversible
+or externally binding decision needs a second perspective. It also helps with consequential
+disagreement or uncertainty that direct checks have not settled. Target the decision, not the
+whole workflow by default. An opinion cannot substitute for missing operational evidence or
+user authorization. If independence is unavailable, disclose that limit and do not treat it
+as a passed gate.
 
-## Phase 2: Spec
+When substantive adversarial review is useful and `adversarial-review-loop` is available,
+use its **review-only / judge-only** mode for the plan or relevant changes. Give the reviewer
+the original requirements, focused question, source locations, and meaningful exclusions;
+request supported findings and material unknowns. The task owner handles repairs once.
+Without that skill, apply the same evidence and risk principles directly; do not invent a
+second review hierarchy. Neither availability of a reviewer nor this skill's invocation
+requires routine work to go through independent review.
 
-**Goal**: Lock in a direction, anticipate risks, and define measurable acceptance
-criteria. The spec becomes the binding contract for Execute and Verify.
+## 5. Execute and revisit only what failed
 
-**The spec form depends on the task**:
+Act within the authorized outcome and constraints. Reorder or combine steps, reuse an existing
+helper, and refine implementation details when evidence supports it. Update a recorded plan
+when the change affects coordination or a meaningful decision; do not stop for a new planning
+cycle over routine learning. Explain material changes in approach briefly.
 
-| Task type | Spec contains |
+When a check fails or a new fact appears, diagnose what it invalidates:
+
+| What changed or failed | Response |
 |---|---|
-| New feature | Plan (steps + acceptance criteria per step) |
-| Bug fix | Root cause hypothesis + fix approach + verification |
-| Code review | Scope + checkpoints + related docs |
-| Debug | Execution path analysis + hypotheses |
-| Architecture | Decision criteria + trade-offs + migration path |
-| Write docs | Outline + key arguments |
-| Trivial instruction | One line: "Execute: X. Verify: Y." |
+| Local implementation defect; approach remains sound | Repair it and rerun affected checks. |
+| Better implementation detail within agreed constraints | Adjust it and check affected behavior. |
+| Assumption or design choice no longer holds | Revisit that decision and its dependent steps; preserve unaffected work and valid evidence. |
+| Requirement conflict, changed external commitment, or missing authorization | Resolve the constraint or ask for the necessary decision before dependent work. |
 
-The test: **could another engineer read this spec and execute the task without
-ambiguity?**
+Repeated failure without new evidence is a reason to reconsider the diagnosis, seek a focused
+independent check, or report a blocker, not to keep applying patches or restart every phase.
+Do not widen scope to fix unrelated problems. A discovered omission needed to satisfy the
+original request is not automatically out of scope just because the plan missed it; check
+its consequences and authorization before acting.
 
-**MUST**:
-- Lock in a specific direction based on the Explore output
-- Anticipate risks: what could go wrong? what would early detection look like?
-- Define acceptance criteria that are measurable — not "tests pass" but
-  "`pnpm test` exit code 0, all 373 pass"
-- State reasoning: what the chosen direction buys — the criterion that decided it,
-  and what it gives up. If nothing distinguishes it from the alternatives, Explore
-  settled nothing: go back
-- Write down **what this round does not do**: what this change deliberately
-  leaves out, which alternatives were considered and rejected, which details are
-  deliberately left unwritten. Write "none" if there is nothing on it. Both
-  Challenge and Verify hand this list to every finder — without it, a finder
-  reports the things you deliberately left out as defects
+Break complex work into useful pieces with clear inputs and outcomes. Delegate when it adds
+coverage or useful parallelism, not to reproduce this entire skill in every subtask. Give each
+worker relevant constraints and a verification responsibility; the owner checks integration.
+Use a progress list when it improves coordination, at whatever point it becomes useful.
 
-**MUST NOT**:
-- Produce vague specs ("fix the bug", "refactor the module")
-- Skip measurable criteria
+## 6. Verify the result and close honestly
 
----
+Compare the actual result with the original request and agreed constraints, as well as the
+plan's criteria. Inspect actual changes and affected paths for omissions or unintended effects;
+preserve unrelated user work. Verify proportionately: direct inspection, focused tests,
+reproductions, or broader checks when impact warrants them. Add independent review for a
+remaining consequential question, not as an automatic second gate.
 
-## Phase 3: Challenge
+Reuse evidence still applicable to the final state. Invalidate only the checks affected by
+later changes. Group related evidence where clear; no mandatory per-criterion table or raw
+output dump. A supported failure routes to the relevant repair or decision above, not
+necessarily back to exploration. Required repository or user checks still apply.
 
-**Goal**: Adversarial review of the spec before execution. This is a quality
-gate, not a formality. You do not execute until the spec survives this phase.
-
-**Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
-The object is the Spec body; the standard is the task request plus the full
-Explore output; the items below are what the hunt looks for. Take its steps 1–4 —
-get the material ready, hunt for problems, dedupe, adjudicate every finding in a
-context that did not write the spec — and **stop there**. Steps 5–6
-are this skill's inner loop instead: nothing is fixed in Challenge, the routing
-below sends each finding to Spec or Explore, and this phase runs again on what
-comes back. Convergence is measured across those rounds, not inside one.
-
-**The challenge must be concrete and adversarial.** One task carries every one
-of these, and the answers must be concrete:
-
-1. **Edge cases**: list at least 2. What happens with empty input? Concurrent
-   calls? Already existing state? Partial failure? Scale (N=0, N=1, N=large)?
-2. **Wrong assumptions**: state at least 1 assumption in the spec. What breaks
-   if it is wrong? How would you detect the error early?
-3. **Overengineering**: point out at least 1 place the spec could be simpler.
-   Is the simplest thing that could possibly work?
-4. **Risk**: is this a destructive change? How far does the change reach? Is there a
-   way to undo it?
-5. **Chosen, not defaulted**: does Explore show a decided trade-off or a valid
-   one-directional argument? Does every eliminated direction name what it did
-   better than the chosen one — if none does, the list is filler and the
-   exploration did not happen. Was a direction missed that a reasonable engineer
-   would have raised?
-6. **What should have moved with it**: walk the spec itself, not just the five
-   questions above. What does this change touch that the spec never mentions?
-   Does every reference it makes still resolve? Does every claim it makes come
-   with evidence?
-
-**Give every finder what this round does not do** (see
-`references/spec-template.md`). Without it, a finder reports the things the spec
-deliberately left out, and that buries the real findings.
-
-**Severity vocabulary**: the finders' table carries a severity column, and here
-it takes exactly two values — **minor** (wording, detail, measurability) or
-**major** (wrong direction, incomplete traversal, flawed assumption) — because
-the routing below keys on it.
-
-**Trivial tasks**: the Challenge can be one line: "No edge cases. No assumptions
-beyond tool availability. No overengineering."
-
-**Executor**: dispatch the hunt to a subagent that can judge and is read-only
-(pick the type from your own tool list). The read-only constraint, what its task
-must carry, and what it must return are all specified in the review
-loop's §5 and §7.
-
-**Then route what survived adjudication**, by severity:
-
-- minor → Spec
-- major → Explore
-- mixed → major dominates
-
-**Do NOT fix a problem in Challenge** — return to Spec or Explore instead.
-Challenge is a gate; it does not do repairs. Do not re-score the adjudicator's
-verdicts either: in this process the verdict belongs to the context that did not
-find the problem.
-
-**Inner loop may run multiple rounds.** This is normal. Each round sharpens
-the spec.
-
-**MUST NOT**:
-- Pass with "looks fine" without listing what you checked
-- Notice a problem but stay silent to "get to execution faster"
-- Fix a problem yourself in Challenge rather than returning to Spec or Explore
-- Drop a finding because it fits neither the minor nor the major list — route it
-  by severity and let Spec or Explore decide what to do with it
-
----
-
-## Phase 4: Execute
-
-**Goal**: Follow the spec precisely.
-
-**Every action must be traceable to a specific entry in the spec.**
-
-**MUST**:
-- Before starting, initialize your harness's progress list with the spec's steps (see Progress
-  visibility)
-- Complete one step, confirm it locally, move to the next
-- If you hit something the spec does not cover → PAUSE → return to Explore
-  (not Spec or Challenge — this is a new problem to plan for)
-
-**MUST NOT**:
-- Deviate from the spec (unless Explore+Spec+Challenge approved a scope change)
-- Skip steps or merge steps
-- "While you're at it" — do anything outside the spec's stated boundaries
-- Keep going when results don't match expectations (that's Verify, not Execute)
-
----
-
-## Phase 5: Verify
-
-**Goal**: Confirm every acceptance criterion is met — and that the change
-carried what it should have and disturbed nothing else.
-
-**Run this phase as a judge-only round of the `adversarial-review-loop` skill.**
-The object is what you produced together with the change that produced it; the
-standard is the acceptance criteria in the spec. Take its steps 1–4 — get the
-material ready, hunt for problems, dedupe, adjudicate every finding in a context
-that did not produce the work — and **stop there**. Steps 5–6 are this skill's outer
-loop: nothing is fixed in Verify, the routing below sends each finding to
-Explore, and this phase runs again on what comes back.
-
-**The hunt has two halves, and one task covers both.** First, every acceptance
-criterion gets its own PASS/FAIL with its own evidence — never "same as above",
-and never a summary standing in for the individual results.
-
-**Then walk the change itself, not just the criteria.** The criteria can only ask
-about what the spec already thought of; ask the question they cannot: *this
-change — what should have moved with it and didn't, and what moved that
-shouldn't have?* Go after what the criteria cannot reach, and check every claim
-of the form "this has no impact" against evidence. The change itself is that
-half's primary material. The criteria set what you may judge PASS or FAIL on, not
-what you may notice.
-
-**Give the task what this round does not do** (see
-`references/spec-template.md`), so nobody reports what the spec deliberately left
-out.
-
-- **Nothing survived adjudication** → task complete
-- **Anything survived** → return to Explore with the finding list as input for a
-  new cycle. The items are already classified, and anything "partially valid" or
-  "part of a larger problem" has already been rewritten — route the rewrites, not the originals.
-
-**Executor**: dispatch the hunt to a subagent that can judge and is read-only
-(pick the type from your own tool list). The read-only constraint, what its task
-must carry, and what it must return are all specified in the review
-loop's §5 and §7.
-
-**MUST NOT**:
-- Claim PASS when a problem exists
-- Lower the standard to declare PASS
-- Report the criteria result alone and skip the walk
-- Fix the problem directly in Verify without going through Explore first
-- Re-score the adjudicator's verdicts — in this process the verdict belongs to
-  the context that did not produce the work
-
----
-
-## Stop conditions
-
-Stop and report to the user when:
-
-| Phase | Condition |
-|---|---|
-| Explore | Critical information is missing and cannot be obtained from tools or codebase |
-| Explore | A trade-off decision is needed that principle docs do not cover |
-| Explore | All directions have been explored and eliminated as dead ends |
-| Execute | A blocker exceeds current capability or permission scope |
-
-**Report format**:
-1. Current phase
-2. What the blocker is
-3. What you tried (paths already ruled out)
-4. What decision or information you need from the user
-
----
-
-## Recursive decomposition
-
-If a step in the spec is itself complex (multi-level decisions, significant
-uncertainty, or a wide-reaching change), start a **new nested iteration** for that
-step alone: Explore → Spec → Challenge → Execute → Verify within the outer
-Execute phase.
-
-This is not scope creep — it is the mechanism that keeps the outer spec
-concrete while handling the inner complexity rigorously.
-
----
-
-## Operational conventions
-
-These are defaults. Override when the task calls for it.
-
-### File location and naming
-
-- **Non-trivial tasks** (spec longer than one line): write to `.task_spec/<slug>.md`
-  - slug derives from the spec's "What" summary — lowercase, hyphenated. E.g.
-    `add-tag-stats`
-  - create the directory if it does not exist
-- **Trivial instruction tasks** (spec is one line, e.g. `pnpm test`): skip the file
-- **Recursively decomposed sub-tasks**: use `--` to connect parent and child slugs.
-  E.g. `.task_spec/add-tag-stats--perf-optimize.md`
-
-### The object of a round
-
-Before a Challenge or Verify round starts, the spec file **is** that round's object.
-It already satisfies what the review loop's §5 requires — subagents can read it
-because it lives inside the working tree, it can be compared before and after, and
-it can be rolled back — so there is no separate copy to make.
-
-One rule follows: **the list of what this round does not do is part of that
-object.** It states the standard the round judges against, and changing the
-standard mid-round invalidates the verdicts already given (the review loop's §1).
-
-### File structure: append cycles, never split
-
-One file per task-slug. Append each cycle to the same file — do not create new
-files for new cycles.
-
-Four phases get recorded in the file. **Execute is NOT written to the file** —
-track progress with your harness's progress list instead.
-
-File structure template: see `references/spec-template.md`.
-**Constraints**:
-- Explore output must show the direction was chosen, not defaulted: either the
-  eliminated directions with what each did better and the deciding criterion, or
-  the constraint that makes the space one-directional. An alternative with no
-  stated advantage is forbidden (trivial tasks excepted)
-- Spec "How" must be executable — another engineer following it encounters zero
-  ambiguity
-- Spec "Verify" criteria must be measurable — not "tests pass" but
-  "`pnpm test` exit code 0, all 373 pass"
-- Challenge answers must be concrete — "no edge cases," "no assumptions," and
-  "no missed directions" are forbidden without specifics (trivial tasks excepted)
-- Verify must attach evidence per criterion — "looks correct" is forbidden
-- After multiple cycles, only the last cycle's spec body is the authoritative
-  contract; earlier cycles are the audit trail
-
-### Progress visibility
-
-- When entering the Execute phase, if the spec has **3 or more distinct steps**,
-  use your harness's progress list to track progress. Map each step to a todo item; check off as
-  you complete each one.
-- Specs with 1–2 steps do not need a todo list
-- **MUST NOT** create a todo list during Explore, Spec, or Challenge — the steps
-  are not final until Challenge passes
-
-### Delegating a recursive sub-step
-
-Use a `task` subagent for a recursively decomposed sub-step when **all** of
-these hold:
-1. Self-contained with clear input/output boundaries
-2. Touches multiple files or subsystems
-3. Can run in parallel with other sub-steps
-
-Otherwise, run the sub-iteration inline. Sub-task specs go in their own file
-(see file location and naming); the subagent runs its own
-Explore → Spec → Challenge → Execute → Verify cycle.
-
+Finish when the authorized outcome is met and relevant verification supports it. For planning
+or analysis work, that means the requested deliverable, not executing the proposed work.
+Report the result, material decisions, verification, and remaining limitations concisely.
+Do not claim success from a completed plan, an empty finding list, or an exhausted budget.
+Respect effort limits; when blocked or no longer making progress, name the unresolved issue,
+what was tried, and the next useful action. Do not recommend a consequential commitment while
+its critical prerequisites remain unverified.

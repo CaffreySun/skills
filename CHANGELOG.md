@@ -10,6 +10,17 @@ A version whose step up from the version below it is a major one carries a
 `npm run check` fails if the headings are not a legal semver sequence, if a major
 step has no such line, or if a minor or patch step carries one anyway.
 
+## [2.0.0] - 2026-11-16
+
+**Breaking:** steps, removed, trigger — adversarial review now defaults to one risk-proportionate review and necessary verification, with selective independent checks instead of universal adjudication and zero-finding loops. task-spec replaces mandatory five-phase loops with adaptive planning and outcome verification.
+
+### Changed
+
+- **adversarial-review-loop 2.0.0:** trust routine reviewer judgment; escalate consequential uncertainty, disagreement, and critical assumptions. Remove mandatory orchestrators, fresh contexts per round, exhaustive counter-evidence, and duplicate reporting. Inspect actual repairs and reuse evidence valid for the final state.
+- Keep review-only / judge-only ownership boundaries and optional legacy verdict labels. Unknowns remain separate from defects; reaching a cost limit does not mean passing review.
+- **task-spec 2.0.0:** replace universal triggering, immutable assistant-authored plans, mandatory challenge quotas, full-cycle retries and recursive phase loops with proportionate planning. Preserve user constraints and explicit approval gates; allow evidence-based implementation adjustments and local repair. Make the persisted plan optional and use independent review only where it adds value. Update the plan template, integrations, and behavioral evaluation cases.
+- Refresh English and Chinese usage/rationale docs and add small, cross-file, and high-risk review evaluation cases. No runtime token or latency improvement is claimed without paired execution measurements.
+
 ## [1.4.1] - 2026-09-30
 
 ### Removed

@@ -9,7 +9,7 @@
     {
       "name": "caffreysun-skills",
       "source": "./",
-      "description": "Two quality-control loops for coding agents: task-spec before acting, adversarial-review-loop on anything whose correctness needs independent verification.",
+      "description": "Adaptive planning and risk-proportionate review: task-spec helps decide and execute; adversarial-review-loop finds substantive defects and verifies repairs.",
       "category": "engineering",
       "keywords": [
         "engineering",

@@ -1,0 +1,29 @@
+{
+  "skill_name": "task-spec",
+  "evals": [
+    {
+      "id": 1,
+      "name": "routine-local-repair",
+      "prompt": "Fix this local Python function: def clamp_percent(value): return min(max(value, 0), 99). Requirement: numeric values are clamped to the inclusive range 0..100; do not redesign input handling. Work in the supplied scratch directory. Make the fix and verify relevant boundaries. No other project changes are needed.",
+      "expected_output": "Change 99 to 100, verify boundary and interior behavior, and finish directly without a persisted spec, invented alternatives, independent gate, or full planning restart.",
+      "files": [],
+      "assertions": ["Repairs the upper bound without unrelated behavior changes", "Runs a focused check covering both bounds and an interior value", "Completes without mandatory plan files, extra reviewers, or phase loops"]
+    },
+    {
+      "id": 2,
+      "name": "adapt-plan-preserve-requirement",
+      "prompt": "Fix exporter.py in the supplied fixture directory. User requirements: trim whitespace, sort names, and preserve duplicate names. Your earlier assistant-authored tentative plan (not user-approved) proposed writing custom normalization and a set-based sort, with the draft acceptance criterion 'unique sorted names'; that criterion conflicts with the actual request. Inspect the existing helper before choosing implementation. You may change exporter.py only; preserve helper behavior. Implement and verify the correct result, updating the approach as necessary without asking for routine implementation approval.",
+      "expected_output": "Recognize draft criterion is wrong; inspect/reuse the existing compatible helper; preserve duplicates and verify actual output. Explain the correction without restarting the entire planning workflow or changing the user requirement.",
+      "files": ["fixtures/adaptive/helpers.py", "fixtures/adaptive/exporter.py"],
+      "assertions": ["Rejects assistant-authored uniqueness criterion in favor of preserving duplicates", "Inspects and reuses compatible helper without editing it", "Checks duplicate, whitespace, sort and empty-input behavior", "Adapts locally without unnecessary approval or full-cycle restart"]
+    },
+    {
+      "id": 3,
+      "name": "consequential-plan-only",
+      "prompt": "Prepare an inspectable migration plan only; do not implement or execute anything. Requirements: no unrecoverable customer-record loss and continued service, with explicit user approval required before production cutover. Draft idea: dual-write, backfill, compare total row counts, immediately drop the old table, and roll back by redeploying the old binary. Concurrent backfill handling, reader cutover, and backup recovery are unverified. Evaluate the critical assumptions, propose a safer plan and meaningful validation, and identify decisions or evidence still needed. Do not request execution approval merely because the plan is ready. A targeted independent check of the critical recovery assumption is appropriate if available; disclose any independence limitation.",
+      "expected_output": "Deliver a plan separating user constraints from tentative choices, reject row-count-only/destructive rollback assumptions, preserve the explicit cutover approval gate, specify validation/recovery prerequisites, use focused independent scrutiny or disclose its absence, and stop at the planning deliverable.",
+      "files": [],
+      "assertions": ["Produces an inspectable plan with preservation, service continuity and explicit cutover approval intact", "Does not implement, execute migration, or request immediate execution approval", "Addresses content correctness, concurrent updates, readers and tested recovery as substantive prerequisites", "Uses focused independent scrutiny or discloses its unavailability", "Does not claim production readiness from plan completion or unverified assumptions"]
+    }
+  ]
+}

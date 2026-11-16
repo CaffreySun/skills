@@ -1,68 +1,35 @@
-<!--
-Format reference for the task-spec skill.
-You MUST follow the constraints in SKILL.md when filling this in.
-Execute phase is NOT written here — track it with todo_write.
-Four phases are recorded: Explore, Spec, Challenge, Verify.
--->
-# spec: <slug>
+# Optional plan outline
 
-## Cycle 1
+Use this only when a persisted plan helps or the user requests one. Follow the
+project's format when one exists. Omit sections that add no useful information;
+do not fill empty sections, invent alternatives, or create a cycle log.
 
-### Explore
-<problem understanding; the directions eliminated and what each did better than
-the chosen one, or the constraint that makes the space one-directional>
+## Outcome and constraints
 
-### Spec
-<spec body: What / How / Verify criteria / reasoning>
+What should be true when the task is done? Which user requirements, agreed
+interfaces, authorizations, or explicit procedures must remain intact?
+Point to the owning requirement where it resolves ambiguity.
 
-**What this round does not do** — what this change deliberately leaves out;
-alternatives considered and rejected; details deliberately left unwritten. Write
-"none" if there is nothing on it. Every finder in Challenge and Verify gets this
-list verbatim.
+## Approach
 
-- <item>
-- <item>
+Describe the significant decisions and dependencies. Explain a real trade-off if
+one affects the choice. Mark hypotheses as hypotheses; leave routine implementation
+details open. State exclusions only where they prevent a plausible misunderstanding.
 
-### Challenge
+## Evidence of success
 
-<judge-only round of the `adversarial-review-loop` skill. Object = the Spec body.
-Standard = the task request plus the Explore output.>
+Describe the behavior or deliverable that satisfies the request and how to check it.
+Include important compatibility and failure behavior. Do not substitute a test count
+for an outcome, or let a draft criterion narrow the user's actual requirement.
 
-- Edge cases: <at least 2>
-- Wrong assumptions: <at least 1>
-- Overengineering: <at least 1>
-- Risk: <destructive? how far does it reach? how to undo it?>
-- Chosen, not defaulted: <decided trade-off or valid one-directional argument? does
-  each eliminated direction name what it did better? was a direction missed?>
-- What should have moved with it: <what this change touches that the spec never
-  mentions; references that no longer resolve; claims without evidence>
+## Open decisions and recovery
 
-**Surviving findings** (the adjudicated list — write "none" if the round produced
-nothing; anything "partially valid" or "part of a larger problem" appears as its rewrite):
+Record unresolved facts that could change the approach, necessary user decisions,
+and safeguards for consequential actions. Distinguish blocking prerequisites from
+reversible assumptions that permit progress on unaffected work.
 
-| # | Location | Severity | Problem | Minimal fix | Confidence |
-|---|---|---|---|---|---|
+## Progress and result
 
-Verdict spread: <n valid / n partially valid / n part of a larger problem / n invalid-discarded>
-Routing: minor → Spec · major → Explore · none → Execute
-
-### Verify
-
-<judge-only round of the `adversarial-review-loop` skill. Object = what was produced
-plus the change that produced it. Standard = the acceptance criteria above.>
-
-- <criterion 1>: PASS / FAIL — <evidence>
-- <criterion 2>: PASS / FAIL — <evidence>
-- Walk over the change: <what should have moved with it and didn't, and what moved
-  that shouldn't have>
-
-**Surviving findings**:
-
-| # | Location | Severity | Problem | Minimal fix | Confidence |
-|---|---|---|---|---|---|
-
-Verdict spread: <n valid / n partially valid / n part of a larger problem / n invalid-discarded>
-Routing: none → task complete · anything → Explore for a new cycle
-
-## Cycle 2 (triggered by <specific reason>)
-…
+Keep the current state and useful evidence references. Note material changes of
+direction and their reasons. Summarize completed verification, unresolved limits,
+and the next useful action if blocked; do not duplicate tool logs.
